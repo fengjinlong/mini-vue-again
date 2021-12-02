@@ -1,0 +1,28 @@
+{
+  "name": "mini-vue-again",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fengjinlong/mini-vue-again.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fengjinlong/mini-vue-again/issues"
+  },
+  "homepage": "https://github.com/fengjinlong/mini-vue-again#readme",
+  "devDependencies": {
+    "@babel/core": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "@babel/preset-typescript": "^7.16.0",
+    "@types/jest": "^27.0.3",
+    "jest": "^27.4.3",
+    "typescript": "^4.5.2"
+  }
+}
