@@ -13,5 +13,5 @@
 - git push origin -d v1.0.0
 - git push origin --delete v1.0.0
 - git push origin :v1.0.0
-### 将本地标签一次性推送到远程
+### 将本地标签一次性推送到远程 注意 这并不代表push代码，代码需要单独的 git push
 - git push --tag
