@@ -137,11 +137,23 @@ it("should return runner when call effect", () => {
   let foo = 10;
   const runner = effect(() => {
     foo++;
-    return foo;
+    return 'foo';
   });
   expect(foo).toBe(11);
   const r = runner();
   expect(foo).toBe(12);
   expect(r).toBe("foo");
 });
+```
+2. 实现
+```javascript
+/**
+ * 在处理返回的 _effect.run 方法时候存在this指针问题
+ * 用bind
+*/
+export function effect(fn) {
+  const _effect = new ReactiveEffect(fn);
+  _effect.run();
+  return _effect.run.bind(_effect);
+}
 ```
