@@ -6,7 +6,7 @@ class ReactiveEffect {
   run() {
     // this 就是依赖的,依赖的run 方法就是执行fn
     activateEffect = this;
-    this._fn();
+    return this._fn();
   }
 }
 let targetMap = new Map();
@@ -31,6 +31,7 @@ let activateEffect;
 export function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run();
+  return _effect.run.bind(_effect);
 }
 export function trigger(target, key) {
   let depsMap = targetMap.get(target);
