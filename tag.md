@@ -128,7 +128,6 @@ export function trigger(target, key) {
 #### v0.0.4
 
 - 当调用 effect 函数（参数为 fn）时候后返回一个函数 run，如果执行 run 则相当于再次执行 fn
--
 
 1. 测试
 
@@ -137,7 +136,7 @@ it("should return runner when call effect", () => {
   let foo = 10;
   const runner = effect(() => {
     foo++;
-    return 'foo';
+    return "foo";
   });
   expect(foo).toBe(11);
   const r = runner();
@@ -145,15 +144,88 @@ it("should return runner when call effect", () => {
   expect(r).toBe("foo");
 });
 ```
+
 2. 实现
+
 ```javascript
 /**
  * 在处理返回的 _effect.run 方法时候存在this指针问题
  * 用bind
-*/
+ */
 export function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run();
   return _effect.run.bind(_effect);
+}
+```
+
+#### v0.0.5
+
+- effect 的第二个参数 {scheduler: ()=>{}}
+
+1. 测试
+
+```typescript
+/**
+ * 通过effect的第二个参数给定一个 scheduler 的 fn1
+ * effect 第一次执行时候，还会执行一个参数 fn
+ * 当触发响应式对象的 set update 操作时，不执行fn，而执行scheduler 的fn1
+ * 当执行返回值 runner 时候，再次执行fn
+ */
+it("scheduler", () => {
+  let dummy;
+  let run: any;
+  const scheduler = jest.fn(() => {
+    run = runner;
+  });
+  const obj = reactive({ foo: 1 });
+  const runner = effect(
+    () => {
+      dummy = obj.foo;
+    },
+    {
+      scheduler,
+    }
+  );
+  expect(scheduler).not.toHaveBeenCalled();
+  expect(dummy).toBe(1);
+
+  obj.foo++;
+  expect(scheduler).toHaveBeenCalledTimes(1);
+  expect(dummy).toBe(1);
+  run();
+  expect(dummy).toBe(2);
+});
+```
+
+2. 实现
+
+```javascript
+export function effect(fn, options: any = {}) {
+  // 传入第二个参数
+  const _effect = new ReactiveEffect(fn, options.scheduler);
+  _effect.run();
+  return _effect.run.bind(_effect);
+}
+
+export function trigger(target, key) {
+  // ...省略部分代码
+  for (const effect of deps) {
+  // 判断是否存在 scheduler，fn? fn1?
+    if (effect.scheduler) {
+      effect.scheduler()
+    } else {
+      effect.run();
+    }
+  }
+}
+
+class ReactiveEffect {
+  private _fn: any;
+  // pbulic 是为了给外部获取到
+  constructor(fn, public scheduler?) {
+    this._fn = fn;
+  }
+  run() {}
 }
 ```

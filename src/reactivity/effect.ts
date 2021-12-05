@@ -1,6 +1,7 @@
 class ReactiveEffect {
   private _fn: any;
-  constructor(fn) {
+  // pbulic 是为了给外部获取到
+  constructor(fn, public scheduler?) {
     this._fn = fn;
   }
   run() {
@@ -28,8 +29,8 @@ export function track(target, key) {
 }
 let activateEffect;
 
-export function effect(fn) {
-  const _effect = new ReactiveEffect(fn);
+export function effect(fn,options:any = {}) {
+  const _effect = new ReactiveEffect(fn,options.scheduler);
   _effect.run();
   return _effect.run.bind(_effect);
 }
@@ -38,6 +39,11 @@ export function trigger(target, key) {
   let deps = depsMap.get(key);
 
   for (const effect of deps) {
-    effect.run();
+    if (effect.scheduler) {
+      effect.scheduler()
+    } else {
+
+      effect.run();
+    }
   }
 }
