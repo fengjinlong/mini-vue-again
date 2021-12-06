@@ -322,3 +322,22 @@ function cleanUpEffect(effect) {
 ```
 
 - onStop
+#### v0.0.7
+- readonly
+1. 测试代码
+2. 实现
+```javascript
+// 不需要收集依赖和触发依赖
+// 未重构的原始代码
+export function readonly(raw) {
+  return new Proxy(raw, {
+    get(target, key) {
+      let res = Reflect.get(target, key);
+      return res
+    },
+    set(target, key, value) {
+      return true
+    }
+  })
+}
+```
