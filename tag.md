@@ -117,9 +117,9 @@ export function track(target, key) {
  */
 export function trigger(target, key) {
   let depsMap = targetMap.get(target);
-  let deps = depsMap.get(key);
+  let dep = depsMap.get(key);
 
-  for (const effect of deps) {
+  for (const effect of dep) {
     effect.run();
   }
 }
@@ -210,7 +210,7 @@ export function effect(fn, options: any = {}) {
 
 export function trigger(target, key) {
   // ...省略部分代码
-  for (const effect of deps) {
+  for (const effect of dep) {
   // 判断是否存在 scheduler，fn? fn1?
     if (effect.scheduler) {
       effect.scheduler()
@@ -229,3 +229,96 @@ class ReactiveEffect {
   run() {}
 }
 ```
+
+#### v0.0.6
+
+- stop
+
+1. 测试
+
+```javascript
+it("stop", () => {
+  let dummy;
+  const obj = reactive({ prop: 1 });
+  const runner = effect(() => {
+    dummy = obj.prop;
+  });
+  obj.prop = 2;
+  expect(dummy).toBe(2);
+
+  stop(runner);
+  // 如果stop 包裹这个reunner, 数据不再是响应式的，
+  // 也就是说需要把 对应的effect 从 dep 里删掉
+  // 根据单测，stop参数就是 effect 的返回值 runner
+  obj.prop = 5;
+  expect(dummy).toBe(2);
+
+  // runner()
+  // expect(dummy).toBe(3)
+});
+```
+
+2. 实现
+
+```javascript
+/**
+ * 有测试可得stop参数是runner
+ */
+export function stop(runner) {}
+// 当调用stop方法时候，需要删掉响应式依赖
+// 首相给effect添加stop方法
+class ReactiveEffect {
+  // ...
+  stop() {}
+  // ...
+}
+// stop 方法怎么能关联到effect的stop方法呢,这样干
+export function effect(fn, options: any = {}) {
+  // ...
+  const runner: any = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
+}
+// 这样stop方法就像个样子了
+export function stop(runner) {
+  runner.effect.stop();
+}
+// 接下来搞effect的stop方法
+// 1个 dep 对应多个 effect,同一个effect可能存在多个dep里面
+// 现在要清除所有 dep 里面的 目标effect，也就是先遍历depsMap得到dep，在delete每一个dep里面的effect
+// 但是depsMap 与 effect不存在关联关系，也就是说当前的effect 不能关系到 所有的depsMap
+// 这样处理，
+/**
+ * 1. dep 与 effect 的关系的 dep.add(effect)
+ * 2. 我们给每一个effect 添加一个deps 的数组空间，用来存储谁 add 当前端的effect 了
+ * 3. 那么，我们就能从effect 本身关联到与他有关的所有dep了，也就是 deps 数组
+ * 4. 返回来，只要遍历当前的的efect的deps属性（deps这里面的每一个dep都存在effect），dep是Set，deps是数组
+ * 5. effect.deps.forEach(dep => dep.delete(effect))
+ */
+
+class ReactiveEffect {
+  // ...
+  active = true;
+  deps = [];
+  stop() {
+    if (this.active) {
+      cleanUpEffect(this);
+      this.active = false;
+    }
+  }
+  // ...
+}
+export function track(target, key) {
+  // ...
+  dep.add(activeEffect);
+  activeEffect.deps.push(dep);
+  // ...
+}
+function cleanUpEffect(effect) {
+  effect.deps.forEach((dep: any) => {
+    dep.delete(effect);
+  });
+}
+```
+
+- onStop
