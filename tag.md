@@ -322,10 +322,14 @@ function cleanUpEffect(effect) {
 ```
 
 - onStop
+
 #### v0.0.7
+
 - readonly
+
 1. 测试代码
 2. 实现
+
 ```javascript
 // 不需要收集依赖和触发依赖
 // 未重构的原始代码
@@ -333,11 +337,57 @@ export function readonly(raw) {
   return new Proxy(raw, {
     get(target, key) {
       let res = Reflect.get(target, key);
-      return res
+      return res;
     },
     set(target, key, value) {
-      return true
-    }
-  })
+      return true;
+    },
+  });
 }
+```
+
+#### v0.0.8
+
+- isReadOnly
+
+1. 测试
+
+```javascript
+const wrapped = readonly(orginal);
+expect(isReadOnly(wrapped)).toBe(true);
+```
+
+2. 实现
+
+```javascript
+  /**
+   * 调用isReadOnly 方法，其实就是return 读一个标记为只读的属性 key1
+   * 在对应的get操作时，判断key 是否就是这个 key1
+   * 如果是key1，返回get上，事先为了区分readonly这个api准备的标记字段，返回这个字段即可
+  */
+ export function isReadOnly(raw) {
+  return !!raw[ReactiveFlegs.IS_READONLY]
+}
+
+function createGetter(isReadOnly: boolean = false, shallow = false): any {
+  return function get(target, key) {
+    if (key === ReactiveFlegs.IS_READONLY) {
+      return isReadOnly
+    }
+    // ...
+```
+
+- isReactive
+1. 思路和readonly大体相似
+```javascript
+export function isReactive (raw) {
+  return !!raw[ReactiveFlegs.IS_REACTIVE]
+}
+function createGetter(isReadOnly: boolean = false, shallow = false): any {
+  return function get(target, key) {
+    if (key === ReactiveFlegs.IS_REACTIVE) {
+      return !isReadOnly
+    }
+    // ...
+
 ```
