@@ -478,3 +478,102 @@ let shouldTract;
     // ...省略部分代码
   }
 ```
+
+#### v0.0.9
+
+1. 嵌套的 readonly reactive
+
+- 测试
+
+```javascript
+it("nested reactive", () => {
+  const orginal = {
+    nested: {
+      foo: 1,
+    },
+    array: [
+      {
+        bar: 2,
+      },
+    ],
+  };
+
+  const observed = reactive(orginal);
+  expect(isReactive(observed)).toBe(true);
+  expect(isReactive(observed.nested)).toBe(true);
+  expect(isReactive(observed.array)).toBe(true);
+  expect(isReactive(observed.array[0])).toBe(true);
+});
+```
+
+- 实现
+
+```javascript
+function createGetter(isReadOnly = false) {
+  return function get(target, key) {
+    // ...
+    let res = Reflect.get(target, key);
+    if (isObject(res)) {
+      return isReadOnly ? readonly(res) : reactive(res);
+    }
+    // ...
+  };
+}
+```
+
+2. shallowReadonly
+
+- 测试
+
+```javascript
+/**
+ * 同时具备 readonly 和 shallow特性
+ * 所以要具备readonly的handles
+ *
+ */
+  it("should not make non-reactive propertive reactive", () => {
+    const props = shallowReadonly({
+      n: {
+        foo: 1
+      }
+    })
+    expect(isReadOnly(props)).toBe(true)
+    expect(isReadOnly(props.n)).toBe(false)
+  })Î
+```
+
+- 实现
+
+```javascript
+export function shallowReadonly(raw) {
+  return createActionObject(raw, shallowReadonlyHandles);
+}
+export const shallowReadonlyHandlers = extend({}, readonlyHandlers, {
+  get: shallowReadonlyGet,
+});
+const shallowReadonlyGet = createGetter(true, true);
+
+function createGetter(isReadOnly = false, shallow = false) {
+  return function get(target, key) {
+    if (key === ReactiveFlegs.IS_REACTIVE) {
+      return !isReadOnly;
+    } else if (key === ReactiveFlegs.IS_READONLY) {
+      return isReadOnly;
+    }
+    let res = Reflect.get(target, key);
+    if (shallow) {
+      // 直接返回
+      return res;
+    }
+    if (isObject(res)) {
+      return isReadOnly ? readonly(res) : reactive(res);
+    }
+    // TODO 收集依赖
+    if (!isReadOnly) {
+      track(target, key);
+    }
+    return res;
+  };
+}
+```
+3. isProxy
