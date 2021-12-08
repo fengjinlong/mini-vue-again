@@ -318,6 +318,7 @@ function cleanUpEffect(effect) {
   effect.deps.forEach((dep: any) => {
     dep.delete(effect);
   });
+  effect.deps.length = 0;
 }
 ```
 
@@ -378,7 +379,9 @@ function createGetter(isReadOnly: boolean = false, shallow = false): any {
 ```
 
 - isReactive
-1. 思路和readonly大体相似
+
+1. 思路和 readonly 大体相似
+
 ```javascript
 export function isReactive (raw) {
   return !!raw[ReactiveFlegs.IS_REACTIVE]
@@ -390,4 +393,88 @@ function createGetter(isReadOnly: boolean = false, shallow = false): any {
     }
     // ...
 
+```
+
+- 优化 stop
+
+1. 测试代码
+
+```javascript
+it("stop", () => {
+  let dummy;
+  const obj = reactive({ prop: 1 });
+  const runner = effect(() => {
+    dummy = obj.prop;
+  });
+  obj.prop = 2;
+  expect(dummy).toBe(2);
+
+  stop(runner);
+  // bj.prop = 5 只执行一次set操作, 测试通过 ok
+  // obj.prop = 5;
+
+  /**
+   * obj.prop++ 是先执行get 在执行set
+   * 测试不通过，得到 3
+   * 虽然stop()删除了依赖，但是由于再次触发get，也就是依赖再次通过track被收集，stop白删除依赖了
+   * 当set时，触发trigger，所以测试失败
+   * 处理：在track操作时候 需要添加判断逻辑
+   */
+  obj.prop++;
+  expect(dummy).toBe(2);
+});
+```
+
+2. 解决
+
+```javascript
+/**
+ * 1 依赖收集是在effect(fn)第一次触发参数fn方法的时候
+ * 2 也就是effect调用自身的run方法
+ * 3 在run方法里面添加逻辑 判断是否需要收集依赖的操作
+ * 4 咱们逆向推到一下，先说说track 方法收集逻辑是这样的
+ *   if(dep.has(activeEffect)) return；
+ *   dep.add(activeEffect);
+ * 5 也就是说 如果 activeEffect 是undefined 那么就不会添加依赖
+ * 6 也就是在执行run方法时候，activeEffect = this;
+ * 7 不要给activeEffect 赋this值就不会添加依赖
+ * 8 第一种不添加依赖情况，当执行完stop，有个控制防止stop多次调用的active
+ * 9 当active为false时，run方法直接放回第一次调用的函数fn，不用收集依赖
+ * 10 也就是不用执行 activeEffect = this;
+*/
+  run() {
+    if (!this.active) {
+      // 不应该收集依赖
+      // 如果调用了stop，active 为 false
+      // 只调用第一次的 _fn, 不进行下面的依赖赋值，也就是不进行依赖收集的 track 操作
+      return this._fn()
+    }
+    // ...
+  }
+  /**
+   * 11 第二次不收集依赖的情况，也就是解决 ++ 操作后stop失效
+   * 12 思路是这样的，如果收集过后，即使被删除了，那么也不用再次收集，添加一个标记变量shouldTrack
+  */
+
+//  操作这个变量
+let shouldTract;
+
+ run() {
+    if (!this.active) {
+      return this._fn();
+    }
+    shouldTrack = true;
+    // 应该收集
+    activeEffect = this;
+    const r = this._fn();
+    // 重置
+    shouldTrack = false;
+    return r;
+  }
+
+  // 判断
+  function track (target, key) {
+    if (!shouldTrack) return
+    // ...省略部分代码
+  }
 ```

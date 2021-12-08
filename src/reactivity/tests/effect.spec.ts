@@ -66,11 +66,16 @@ describe("effect", () => {
     // 如果stop 包裹这个reunner, 数据不再是响应式的，
     // 也就是说需要把 对应的effect 从 deps 里删掉
     // 根据单测，stop参数就是runner
-    obj.prop = 5;
+
+    // 只执行一次set操作
+    // obj.prop = 5;
+
+    // 先执行get 在执行set
+    obj.prop++;
     expect(dummy).toBe(2)
 
     runner()
-    expect(dummy).toBe(5)
+    expect(dummy).toBe(3)
   })
   it("onStop", () => {
     const obj = reactive({
