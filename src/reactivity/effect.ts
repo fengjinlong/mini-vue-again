@@ -72,6 +72,7 @@ export function track(target, key) {
     dep = new Set();
     depsMap.set(key, dep);
   }
+  // 这不光光是抽离一个函数那么简单，为ref做准备
   trackEffects(dep);
   // if(dep.has(activeEffect)) return
   // dep.add(activeEffect);
@@ -85,7 +86,7 @@ export function trackEffects(dep) {
   activeEffect.deps.push(dep);
 }
 
-function isTracking() {
+export function isTracking() {
   return shouldTract && activeEffect !== undefined;
 }
 
@@ -103,6 +104,9 @@ export function trigger(target, key) {
   let depsMap = targetMap.get(target);
   let dep = depsMap.get(key);
 
+  triggerEffect(dep);
+}
+export function triggerEffect(dep: any) {
   for (const effect of dep) {
     if (effect.scheduler) {
       effect.scheduler();
@@ -111,6 +115,7 @@ export function trigger(target, key) {
     }
   }
 }
+
 export function stop(runner) {
   runner.effect.stop();
   // 指向类 的stop方法

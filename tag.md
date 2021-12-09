@@ -576,4 +576,95 @@ function createGetter(isReadOnly = false, shallow = false) {
   };
 }
 ```
+
 3. isProxy
+
+#### v0.0.10
+
+1. ref
+
+- 测试
+
+```javascript
+it("happy path", () => {
+  const a = ref(1);
+  expect(a.value).toBe(1);
+});
+it.only("should be reactive", () => {
+  const a = ref(1);
+  let dummy;
+  let calls = 0;
+  effect(() => {
+    calls++;
+    dummy = a.value;
+  });
+  expect(calls).toBe(1);
+  expect(dummy).toBe(1);
+  // a.value = 2;
+  a.value++;
+  expect(calls).toBe(2);
+  expect(dummy).toBe(2);
+
+  a.value = 2;
+  expect(calls).toBe(2);
+  expect(dummy).toBe(2);
+});
+it("should be nestes properties reactive", () => {
+  const a = ref({
+    count: 1,
+  });
+  let dummy;
+  effect(() => {
+    dummy = a.value.count;
+  });
+  expect(dummy).toBe(1);
+  a.value.count = 2;
+  expect(dummy).toBe(2);
+});
+```
+
+- 实现思路
+
+```javascript
+/**
+ * ref 接收的一个单值，比如 1 true '1'
+ * 也就是说为什么 ref 的类型需要一个 ref.value 的操作？
+ * 那么 proxy 怎么知道的get 和 set ？proxy 的参数是个对象，所以需要把单值转换为对象
+ * 通过 RefImpl 类实现，里面有 value get set。
+*/
+
+/**
+ * reactive 的响应式是通过 targetMap -> depsMap -> dep 这样的对应关系
+ * 但是ref 没有target，没有 key. 所以自身构建一个dep就可以了
+ * 这个dep复用reactive 的与dep相关的tract和trigger操作逻辑
+*/
+
+class RefImpl {
+  private _value: any;
+  public dep;
+  private _rawValue: any;
+  constructor(value) {
+    // 存一下原始值，当value 为reactive时候使用
+    this._rawValue = value;
+    this._value = convert(value);
+    this.dep = new Set();
+  }
+  get value() {
+    // 复用ractive的
+    trackRefValue(this);
+    return this._value;
+  }
+  set value(newValue: any) {
+    // 如果value 是个reactive类型，那么需要用他的原始值作比较
+
+    if (hasChanged(newValue, this._rawValue)) {
+      this._rawValue = newValue;
+      this._value = convert(newValue)
+      // 必须是先修改在调用trigger
+      convert(newValue)
+      // 复用ractive的
+      triggerEffect(this.dep);
+    }
+  }
+}
+```
