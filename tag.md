@@ -643,6 +643,7 @@ class RefImpl {
   private _value: any;
   public dep;
   private _rawValue: any;
+  public __v_isRef;
   constructor(value) {
     // 存一下原始值，当value 为reactive时候使用
     this._rawValue = value;
@@ -666,5 +667,44 @@ class RefImpl {
       triggerEffect(this.dep);
     }
   }
+}
+```
+
+2. isRef
+
+- 实现
+
+```javascript
+function isRef(v) {
+  return !!v.__v_isRef;
+}
+```
+
+3. unRef
+
+```javascript
+function unRef(value) {
+  return !!value.__v_ ? value.value : value;
+}
+```
+
+4. proxyRefs
+
+- 实现
+
+```javascript
+export function proxyRefs(objectWithRefs) {
+  return new Proxy(objectWithRefs, {
+    get(target, key) {
+      return unRef(Reflect.get(target, key));
+    },
+    set(target, key, value) {
+      if (isRef(target[key]) && !isRef(value)) {
+        return (target[key].value = value);
+      } else {
+        return Reflect.set(target, key, value);
+      }
+    },
+  });
 }
 ```
