@@ -1,6 +1,6 @@
 import { extend } from "../shared";
 
-class ReactiveEffect {
+export class ReactiveEffect {
   private _fn: any;
   deps = [];
   // active 是处理重复调用stop的
