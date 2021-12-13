@@ -965,4 +965,6 @@ const subTree = instance.render()
 patch(subTree, container)
 ```
 
+#### v0.1.1
+1. rollup 配置
 
