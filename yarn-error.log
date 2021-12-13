@@ -1,0 +1,53 @@
+Arguments: 
+  C:\Program Files\nodejs\node.exe C:\Program Files (x86)\Yarn\bin\yarn.js add rollup --dev
+
+PATH: 
+  C:\Users\fe\Desktop\cmder_mini\vendor\conemu-maximus5\ConEmu\Scripts;C:\Users\fe\Desktop\cmder_mini\vendor\conemu-maximus5;C:\Users\fe\Desktop\cmder_mini\vendor\conemu-maximus5\ConEmu;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Git\cmd;C:\ProgramData\chocolatey\bin;C:\Program Files (x86)\Yarn\bin\;D:\mingw\bin;C:\Program Files\nodejs\;C:\Users\fe\AppData\Local\Microsoft\WindowsApps;C:\Users\fe\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\fe\AppData\Local\Yarn\bin;C:\Users\fe\AppData\Roaming\npm;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\fe\Desktop\cmder_mini\vendor\bin;C:\Users\fe\Desktop\cmder_mini
+
+Yarn version: 
+  1.22.5
+
+Node version: 
+  16.13.1
+
+Platform: 
+  win32 x64
+
+Trace: 
+  Error: ENOENT: no such file or directory, copyfile 'C:\Users\fe\AppData\Local\Yarn\Cache\v6\npm-ansi-styles-3.2.1-41fbb20243e50b12be0f04b8dedbf07520ce841d-integrity\node_modules\ansi-styles\index.js' -> 'C:\Users\fe\Desktop\mini-vue-again\node_modules\@babel\highlight\node_modules\ansi-styles\index.js'
+
+npm manifest: 
+  {
+    "name": "mini-vue-again",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+      "test": "jest"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/fengjinlong/mini-vue-again.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+      "url": "https://github.com/fengjinlong/mini-vue-again/issues"
+    },
+    "homepage": "https://github.com/fengjinlong/mini-vue-again#readme",
+    "devDependencies": {
+      "@babel/core": "^7.16.0",
+      "@babel/preset-env": "^7.16.4",
+      "@babel/preset-typescript": "^7.16.0",
+      "@types/jest": "^27.0.3",
+      "jest": "^27.4.3",
+      "typescript": "^4.5.2"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
