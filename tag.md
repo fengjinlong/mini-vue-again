@@ -887,3 +887,82 @@ export function computed(getter) {
 }
 
 ```
+### runtime 模块
+#### v0.1.0
+1. 初始化装箱，拆箱
+- App
+
+```typescript
+export const App = {
+  render() {
+    return h("div", this.msg)
+  },
+  setup() {
+    return {
+      msg: "hello vue"
+    }
+  }
+}
+```
+
+- createApp(App).mount("#app")
+
+```typescript
+// 创建 vnode
+render(vnode, rootContainer)// 第一次执行render
+// render -> patch
+```
+
+- patch(vnode, container);
+
+```typescript
+// vnode -> {
+//	type,
+//	props,
+//	children
+//}
+// 这里patch的第一个参数是组件
+
+
+// patch -> processComponent
+```
+
+- processComponent(vnode, container);
+
+```typescript
+// processComponent -> mountComponent
+```
+
+- mountComponent(vnode, container);
+
+```typescript
+// 1 创建instance实例 
+instance = createComponentInstance(vnode);
+
+// 2 初始化，收集信息，instance挂载相关属性，方法, 装箱
+setupComponent(instance);
+// Component = instance.vnode.type;
+// 最终为了得到这样的
+// instance -> {
+//   render: Component.render
+//   setupState: Component.setup()
+//   vnode: {
+//     type: App
+//   }
+// }
+
+// 3 渲染组件的render函数内部的element值，拆箱过程
+setupRenderEffect(instance, container);
+```
+
+- setupRenderEffect(instance, container);
+
+```typescript
+const subTree = instance.render()
+// subTree -> h("div", this.msg)
+// 这里patch的参数是subTree
+
+patch(subTree, container)
+```
+
+

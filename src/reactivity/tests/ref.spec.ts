@@ -40,10 +40,15 @@ describe('ref', () => {
   })
   it('isRef', () => {
     const a = ref(1)
+    const aa= ref({
+      value: 11
+    })
     const user = reactive({
       age: 10
     })
     expect(isRef(a)).toBe(true)
+    expect(isRef(aa)).toBe(true)
+    expect(aa.value).toStrictEqual({"value": 11})
     expect(isRef(1)).toBe(false)
     expect(isRef(user)).toBe(false)
   })
