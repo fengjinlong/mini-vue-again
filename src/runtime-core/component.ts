@@ -1,6 +1,7 @@
 export function createComponentInstance(vnode) {
   const component = {
     vnode,
+    type: vnode.type,
   };
   return component;
 }
@@ -19,7 +20,7 @@ function setupStatefulComponent(instance: any) {
 
   const Component = instance.vnode.type;
   const { setup } = Component;
-
+console.log()
   if (setup) {
     const setupResult = setup();
 
@@ -48,7 +49,6 @@ function handleSetupResult(instance: any, setupResult: any) {
 }
 function finishComponentSetup(instance: any) {
   const Component = instance.type
-  if(Component.render) {
     instance.render = Component.render
     // instance -> {
     //   render:
@@ -57,6 +57,5 @@ function finishComponentSetup(instance: any) {
     //     type: App
     //   }
     // }
-  }
 }
 

@@ -1,3 +1,4 @@
+import { isObject } from "../shared/index";
 import { createComponentInstance, setupComponent } from "./component";
 
 // 查查初始化时候调用render了么？
@@ -7,7 +8,41 @@ export function render(vnode, container) {
 }
 
 function patch(vnode: any, container: any) {
-  processComponent(vnode, container);
+  // 当vnode.type的值时，组件是object，element是string，这样区分组件和元素
+  console.log(typeof vnode.type)
+  if(typeof vnode.type === 'string'){
+    // patch element
+    processElement(vnode, container);
+  } else if (isObject(vnode.type)){
+    // patch 组件
+    processComponent(vnode, container);
+  }
+}
+function processElement(vnode: any, container: any) {
+  // 包含初始化和更新流程
+  // init
+  mountElement(vnode, container)
+}
+function mountElement(vnode: any, container: any) {
+  const el = document.createElement(vnode.type);
+
+  const {props, children} = vnode
+  // string array
+  if (typeof children === 'string') {
+    el.textContent = children
+  } else if (Array.isArray(children)) {
+    mountChildren(vnode, el)
+  }
+  for(let key in props) {
+    let val = props[key]
+    el.setAttribute(key, val)
+  }
+  container.append(el)
+}
+function mountChildren(vnode, container) {
+  vnode.children.forEach(v => {
+    patch(v, container)
+  })
 }
 function processComponent(vnode: any, container: any) {
   mountComponent(vnode, container);
@@ -41,4 +76,5 @@ function setupRenderEffect(instance:any, container) {
   // vnode -> element -> mountElement
   patch(subTree, container)
 }
+
 

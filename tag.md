@@ -966,5 +966,38 @@ patch(subTree, container)
 ```
 
 #### v0.1.1
-1. rollup 配置
+1. rollup 安装
+```
+// rollup 依赖
+rollup
+tslib
 
+// 因为用的ts，所以配置文件需要这个插件
+@rollup/plugin-typescript
+```
+2. rollup.config.js 配置文件
+```
+import typescript from "@rollup/plugin-typescript"
+export default {
+  input: "./src/index.ts",
+  output: [
+    {
+      format: "cjs",
+      file: "lib/guide-mini-vue.cjs.js"
+    },
+    {
+      format: "es",
+      file: "lib/guide-mini-vue.esm.js"
+    }
+  ],
+  plugins: [typescript()]
+}
+```
+
+#### v0.1.2
+1. 渲染组件和element
+- 根据vnode.type 类型判断渲染 的是组件还是 element
+- 如果是element，包含初始化和更新环节
+- 挂载流程从vnode拿到相应的初始数据 el,props(id,class),childred
+- children 判断是string 还是 array
+- 如果是array，再次循环 patch
