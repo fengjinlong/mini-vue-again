@@ -1056,5 +1056,66 @@ export default {
       vnode.el = subTree.el
       // ...
     ```
+#### v0.1.5
+1. ShapeFlags 更高效的判断类型，可读性低
+- 枚举类型
+```typescript
+export const enum ShapeFlags {
+  ELEMENT = 1, // 0001 1
+  STATEFUL_COMPONENT = 1 << 1, // 0010 2
+  TEXT_CHILDREN = 1 << 2, // 0100 4
+  ARRAY_CHILDREN = 1 << 3, // 1000 8
+}
+```
+- 初始化vnode
+```typescript
+export function createVNode(type, props?, children?) {
+  const vnode = {
+    type,
+    props,
+    children,
+    shapeFlag: getShapeFlag(type),// 元素？组件？
+    el: null
+  };
 
+  // 下面为处理children准备，给vnode再次添加一个flag
+  // 这里的逻辑是这样的
+  /**
+   * a,b,c,d 为二进制数
+   * 如果 c = a | b，那么 c&b 和 c&a 后转为十进制为非0, c&d 后转为10进制为0
+   * 得到 0 或者 非0 后就能应用在 判断逻辑
+   * 
+  */
+  if (typeof children === 'string') {
+    // 0001 | 0100 -> 0101 
+    // 0010 | 0100 -> 0110
+    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.TEXT_CHILDREN 
+  } else if (Array.isArray(children)) {
+    // 0001 | 1000 -> 1001
+    // 0010 | 1000 -> 1010
+    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.ARRAY_CHILDREN
+  }
+  return vnode;
+}
+function getShapeFlag(type: any) {
+  // vnode 是element元素 还是 组件 0001 0010
+  return typeof type === 'string' ? ShapeFlags.ELEMENT : ShapeFlags.STATEFUL_COMPONENT 
+}
+```
+- 应用
+```typescript
+// if (typeof vnode.type === "string") {}
+  if (shapeFlag & ShapeFlags.ELEMENT) {
+
+  // } else if (isObject(vnode.type)) {
+  } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+  }
+
+  // if (typeof children === "string")
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+    
+  // if (Array.isArray(children))
+  } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+  }
+```
     

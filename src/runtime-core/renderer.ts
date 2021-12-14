@@ -1,4 +1,5 @@
 import { isObject } from "../shared/index";
+import { ShapeFlags } from "../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
 
 // 查查初始化时候调用render了么？
@@ -9,11 +10,14 @@ export function render(vnode, container) {
 
 function patch(vnode: any, container: any) {
   // 当vnode.type的值时，组件是object，element是string，这样区分组件和元素
-  console.log(typeof vnode.type);
-  if (typeof vnode.type === "string") {
+
+  const { shapeFlag } = vnode;
+  // if (typeof vnode.type === "string") {
+  if (shapeFlag & ShapeFlags.ELEMENT) {
     // patch element
     processElement(vnode, container);
-  } else if (isObject(vnode.type)) {
+  // } else if (isObject(vnode.type)) {
+  } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
     // patch 组件
     processComponent(vnode, container);
   }
@@ -24,13 +28,14 @@ function processElement(vnode: any, container: any) {
   mountElement(vnode, container);
 }
 function mountElement(vnode: any, container: any) {
-  const el = (vnode.el) = document.createElement(vnode.type);
+  const el = (vnode.el = document.createElement(vnode.type));
 
-  const { props, children } = vnode;
+  const { props, children,shapeFlag } = vnode;
   // string array
-  if (typeof children === "string") {
+  // if (typeof children === "string") {
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
     el.textContent = children;
-  } else if (Array.isArray(children)) {
+  } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
     mountChildren(vnode, el);
   }
   for (let key in props) {
@@ -71,10 +76,10 @@ function mountComponent(initialVNode: any, container: any) {
   // render 返回的subTree 给patch，如果是组件继续递归，如果是element 则渲染
   setupRenderEffect(instance, initialVNode, container);
 }
-function setupRenderEffect(instance: any,initialVNode: any,container) {
+function setupRenderEffect(instance: any, initialVNode: any, container) {
   const { proxy } = instance;
   const subTree = instance.render.call(proxy);
   // vnode -> element -> mountElement
   patch(subTree, container);
-  initialVNode.el = subTree.el
+  initialVNode.el = subTree.el;
 }
