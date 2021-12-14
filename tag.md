@@ -1189,3 +1189,73 @@ export function initProps(instance, rawProps) {
 ```typescript
 const setupResult = setup(shallowReadonly(instance.props));
 ```
+
+#### v0.1.7
+
+1. emit
+
+```typescript
+// 使用
+// 子组件
+export const Foo = {
+  setup(props, { emit }) {
+    const emitAdd = () => {
+      emit("add", 1, 6);
+    };
+    return {
+      emitAdd,
+    };
+  },
+  render() {
+    const btn = h(
+      "button",
+      {
+        onClick: this.emitAdd,
+      },
+      "emitAdd"
+    );
+
+    return h("div", {}, [btn]);
+  },
+};
+
+// 父组件
+h(Foo, {
+  onAdd(a, b) {
+    console.log("onAdd", a, b);
+  },
+});
+
+// 由此可见
+/**
+ * emit 是 {setup} 的第二个参数,需要挂载到 instance上
+ * 内部派发一个事件add,需要到组件的props找到对应onAdd属性，找到了就执行
+ * 因为props需要在instance上获取，但是不用让用户传instance，所以用bind绑定第一个参数
+ * 第一个参数是instance ， instance.emit = emit.bind(null, instance) as any;
+ * 最后就是在props上进行匹配处理，add->onAdd add-foo->onAddFoo
+ * 参入参数即可
+ *
+ */
+
+const instance = {
+  vnode,
+  type: vnode.type,
+  setupState: {},
+  emit: () => {},
+  props: {},
+};
+instance.emit = emit.bind(null, instance) as any;
+const setupResult = setup(shallowReadonly(instance.props), {
+  emit: instance.emit,
+});
+export function emit(instance, event, ...arg) {
+  const { props } = instance;
+  // add -> Add
+  // add-add -> addAdd
+
+  const handlerName = toHandlerKey(camelize(event));
+  console.log(handlerName);
+  const handler = props[handlerName];
+  handler && handler(...arg);
+}
+```
