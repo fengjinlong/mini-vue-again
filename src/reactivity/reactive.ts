@@ -5,12 +5,12 @@ export const enum ReactiveFlegs {
 }
 
 export function reactive(raw) {
-  return createActionObject(raw, mutableHandles)
+  return createReactiveObject(raw, mutableHandles)
 }
 export function readonly(raw) {
-  return createActionObject(raw, readonlyHandles)
+  return createReactiveObject(raw, readonlyHandles)
 }
-function createActionObject(raw:any, baseHandlers: ProxyHandler<any>) {
+function createReactiveObject(raw:any, baseHandlers: ProxyHandler<any>) {
   return new Proxy(raw, baseHandlers)
 }
 export function isReadOnly(raw) {
@@ -20,7 +20,7 @@ export function isReactive(raw) {
   return !!raw[ReactiveFlegs.IS_REACTIVE]
 }
 export function shallowReadonly(raw) {
-  return createActionObject(raw, shallowReadonlyHandles)
+  return createReactiveObject(raw, shallowReadonlyHandles)
 }
 export function isProxy (raw) {
   return isReadOnly(raw) || isReactive(raw)

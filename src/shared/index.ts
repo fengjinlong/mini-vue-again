@@ -5,4 +5,4 @@ export const isObject = (value) => {
 export const hasChanged = (v1,v2) => {
   return !Object.is(v1,v2);
 }
-// export const hasOwn = (val, key) => Object.prototype.hasOwnProperty.call(val, key);
+export const hasOwn = (val, key) => Object.prototype.hasOwnProperty.call(val, key);

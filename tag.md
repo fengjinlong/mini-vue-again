@@ -546,7 +546,7 @@ function createGetter(isReadOnly = false) {
 
 ```javascript
 export function shallowReadonly(raw) {
-  return createActionObject(raw, shallowReadonlyHandles);
+  return createReactiveObject(raw, shallowReadonlyHandles);
 }
 export const shallowReadonlyHandlers = extend({}, readonlyHandlers, {
   get: shallowReadonlyGet,
@@ -887,29 +887,33 @@ export function computed(getter) {
 }
 
 ```
+
 ### runtime 模块
+
 #### v0.1.0
+
 1. 初始化装箱，拆箱
+
 - App
 
 ```typescript
 export const App = {
   render() {
-    return h("div", this.msg)
+    return h("div", this.msg);
   },
   setup() {
     return {
-      msg: "hello vue"
-    }
-  }
-}
+      msg: "hello vue",
+    };
+  },
+};
 ```
 
 - createApp(App).mount("#app")
 
 ```typescript
 // 创建 vnode
-render(vnode, rootContainer)// 第一次执行render
+render(vnode, rootContainer); // 第一次执行render
 // render -> patch
 ```
 
@@ -923,7 +927,6 @@ render(vnode, rootContainer)// 第一次执行render
 //}
 // 这里patch的第一个参数是组件
 
-
 // patch -> processComponent
 ```
 
@@ -936,7 +939,7 @@ render(vnode, rootContainer)// 第一次执行render
 - mountComponent(vnode, container);
 
 ```typescript
-// 1 创建instance实例 
+// 1 创建instance实例
 instance = createComponentInstance(vnode);
 
 // 2 初始化，收集信息，instance挂载相关属性，方法, 装箱
@@ -958,15 +961,17 @@ setupRenderEffect(instance, container);
 - setupRenderEffect(instance, container);
 
 ```typescript
-const subTree = instance.render()
+const subTree = instance.render();
 // subTree -> h("div", this.msg)
 // 这里patch的参数是subTree
 
-patch(subTree, container)
+patch(subTree, container);
 ```
 
 #### v0.1.1
+
 1. rollup 安装
+
 ```
 // rollup 依赖
 rollup
@@ -975,7 +980,9 @@ tslib
 // 因为用的ts，所以配置文件需要这个插件
 @rollup/plugin-typescript
 ```
+
 2. rollup.config.js 配置文件
+
 ```
 import typescript from "@rollup/plugin-typescript"
 export default {
@@ -995,70 +1002,77 @@ export default {
 ```
 
 #### v0.1.2
-1. 渲染组件和element
-- 根据vnode.type 类型判断渲染 的是组件还是 element
-- 如果是element，包含初始化和更新环节
-- 挂载流程从vnode拿到相应的初始数据 el,props(id,class),childred
-- children 判断是string 还是 array
-- 如果是array，再次循环 patch
+
+1. 渲染组件和 element
+
+- 根据 vnode.type 类型判断渲染 的是组件还是 element
+- 如果是 element，包含初始化和更新环节
+- 挂载流程从 vnode 拿到相应的初始数据 el,props(id,class),childred
+- children 判断是 string 还是 array
+- 如果是 array，再次循环 patch
 
 #### v0.1.4
-1. 如果获取组件的this，也就是想拿到children的this值，有多种情况，我们暂时分为两大类
 
-- 如果是setupState里面的值，只需要把setup的返回对象绑定到render函数即可
+1. 如果获取组件的 this，也就是想拿到 children 的 this 值，有多种情况，我们暂时分为两大类
+
+- 如果是 setupState 里面的值，只需要把 setup 的返回对象绑定到 render 函数即可
 - this.$el 类型的
 
-所以采用代理模式解决，让用户更方便使用this的值，setupState情况从setup的返回值处理。$el情况可以在创建el时候绑定到 vnode上。 
+所以采用代理模式解决，让用户更方便使用 this 的值，setupState 情况从 setup 的返回值处理。$el 情况可以在创建 el 时候绑定到 vnode 上。
 
 - 初始化时候创建代理对象 proxy
 
-    ```typescript
-    // $el
-    function mountElement(vnode: any, container: any) {
-      const el = (vnode.el) = document.createElement(vnode.type);
-      // ...
-    function setupRenderEffect(instance: any,vnode: any,container) {
-      const { proxy } = instance;
-      const subTree = instance.render.call(proxy);
-      // vnode -> element -> mountElement
-      patch(subTree, container);
-      vnode.el = subTree.el
-    }
-    ```
+  ```typescript
+  // $el
+  function mountElement(vnode: any, container: any) {
+    const el = (vnode.el) = document.createElement(vnode.type);
+    // ...
+  function setupRenderEffect(instance: any,vnode: any,container) {
+    const { proxy } = instance;
+    const subTree = instance.render.call(proxy);
+    // vnode -> element -> mountElement
+    patch(subTree, container);
+    vnode.el = subTree.el
+  }
+  ```
 
-    ```typescript
-    function setupStatefulComponent(instance: any) {
-      // 调用setup 函数，拿到setup函数的返回值
-    
-      const Component = instance.vnode.type;
-      instance.proxy = new Proxy({}, {
-        get(target, key) {
-          // setupState 情况 (this.xxx, xxx是setup的返回对象的key)
-          const {setupState} = instance;
-          if (key in setupState) {
-            return setupState[key];
-          }
-          // key -> $el
-          if (key === "$el") {
-            return instance.vnode.el
-          }
+  ```typescript
+  function setupStatefulComponent(instance: any) {
+    // 调用setup 函数，拿到setup函数的返回值
+
+    const Component = instance.vnode.type;
+    instance.proxy = new Proxy({}, {
+      get(target, key) {
+        // setupState 情况 (this.xxx, xxx是setup的返回对象的key)
+        const {setupState} = instance;
+        if (key in setupState) {
+          return setupState[key];
         }
-      })
-      // ...
-    ```
+        // key -> $el
+        if (key === "$el") {
+          return instance.vnode.el
+        }
+      }
+    })
+    // ...
+  ```
 
-- 把代理对象绑定到render的this上
+- 把代理对象绑定到 render 的 this 上
 
-    ```typescript
-    function setupRenderEffect(instance:any,vnode， container) {
-      const {proxy} = instance;
-      const subTree = instance.render.call(proxy)
-      vnode.el = subTree.el
-      // ...
-    ```
+  ```typescript
+  function setupRenderEffect(instance:any,vnode， container) {
+    const {proxy} = instance;
+    const subTree = instance.render.call(proxy)
+    vnode.el = subTree.el
+    // ...
+  ```
+
 #### v0.1.5
+
 1. ShapeFlags 更高效的判断类型，可读性低
+
 - 枚举类型
+
 ```typescript
 export const enum ShapeFlags {
   ELEMENT = 1, // 0001 1
@@ -1067,15 +1081,17 @@ export const enum ShapeFlags {
   ARRAY_CHILDREN = 1 << 3, // 1000 8
 }
 ```
-- 初始化vnode
+
+- 初始化 vnode
+
 ```typescript
 export function createVNode(type, props?, children?) {
   const vnode = {
     type,
     props,
     children,
-    shapeFlag: getShapeFlag(type),// 元素？组件？
-    el: null
+    shapeFlag: getShapeFlag(type), // 元素？组件？
+    el: null,
   };
 
   // 下面为处理children准备，给vnode再次添加一个flag
@@ -1084,38 +1100,92 @@ export function createVNode(type, props?, children?) {
    * a,b,c,d 为二进制数
    * 如果 c = a | b，那么 c&b 和 c&a 后转为十进制为非0, c&d 后转为10进制为0
    * 得到 0 或者 非0 后就能应用在 判断逻辑
-   * 
-  */
-  if (typeof children === 'string') {
-    // 0001 | 0100 -> 0101 
+   *
+   */
+  if (typeof children === "string") {
+    // 0001 | 0100 -> 0101
     // 0010 | 0100 -> 0110
-    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.TEXT_CHILDREN 
+    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.TEXT_CHILDREN;
   } else if (Array.isArray(children)) {
     // 0001 | 1000 -> 1001
     // 0010 | 1000 -> 1010
-    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.ARRAY_CHILDREN
+    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.ARRAY_CHILDREN;
   }
   return vnode;
 }
 function getShapeFlag(type: any) {
   // vnode 是element元素 还是 组件 0001 0010
-  return typeof type === 'string' ? ShapeFlags.ELEMENT : ShapeFlags.STATEFUL_COMPONENT 
+  return typeof type === "string"
+    ? ShapeFlags.ELEMENT
+    : ShapeFlags.STATEFUL_COMPONENT;
 }
 ```
+
 - 应用
+
 ```typescript
 // if (typeof vnode.type === "string") {}
-  if (shapeFlag & ShapeFlags.ELEMENT) {
-
+if (shapeFlag & ShapeFlags.ELEMENT) {
   // } else if (isObject(vnode.type)) {
-  } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-  }
+} else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+}
 
-  // if (typeof children === "string")
-  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-    
+// if (typeof children === "string")
+if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
   // if (Array.isArray(children))
-  } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-  }
+} else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+}
 ```
-    
+
+#### v0.1.6
+
+1. 事件
+
+```typescript
+for (let key in props) {
+  let val = props[key];
+  const isOn = (key: string) => /^on[A-Z]/.test(key);
+  if (isOn(key)) {
+    const event = key.slice(2).toLowerCase();
+    el.addEventListener(event, val);
+  } else {
+    el.setAttribute(key, val);
+  }
+}
+```
+
+2. props
+
+- 实现 setup(props)
+
+```typescript
+// 初始化
+export function setupComponent(instance) {
+  // ...
+  // props
+  initProps(instance, instance.vnode.props);
+  // ...
+}
+
+// 挂载到instance
+export function initProps(instance, rawProps) {
+  instance.props = rawProps || {};
+}
+
+// 传给setup
+const setupResult = setup(instance.props);
+```
+
+- 实现 this 访问 挂载到 instance
+
+```typescript
+export function initProps(instance, rawProps) {
+  instance.props = rawProps || {};
+}
+```
+
+- 实现只读
+
+```typescript
+const setupResult = setup(shallowReadonly(instance.props));
+```
