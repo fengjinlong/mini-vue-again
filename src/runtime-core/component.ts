@@ -36,7 +36,7 @@ function handleSetupResult(instance: any, setupResult: any) {
   if (typeof setupResult === "object") {
     instance.setupState = setupResult
   }
-
+  
   // 保证组件render有值
   // 组件 -> const App = {
   //   render() {
