@@ -1001,3 +1001,60 @@ export default {
 - 挂载流程从vnode拿到相应的初始数据 el,props(id,class),childred
 - children 判断是string 还是 array
 - 如果是array，再次循环 patch
+
+#### v0.1.3
+1. 如果获取组件的this，也就是想拿到children的this值，有多种情况，我们暂时分为两大类
+
+- 如果是setupState里面的值，只需要把setup的返回对象绑定到render函数即可
+- this.$el 类型的
+
+所以采用代理模式解决，让用户更方便使用this的值，setupState情况从setup的返回值处理。$el情况可以在创建el时候绑定到 vnode上。 
+
+- 初始化时候创建代理对象 proxy
+
+    ```typescript
+    // $el
+    function mountElement(vnode: any, container: any) {
+      const el = (vnode.el) = document.createElement(vnode.type);
+      // ...
+    function setupRenderEffect(instance: any,vnode: any,container) {
+      const { proxy } = instance;
+      const subTree = instance.render.call(proxy);
+      // vnode -> element -> mountElement
+      patch(subTree, container);
+      vnode.el = subTree.el
+    }
+    ```
+
+    ```typescript
+    function setupStatefulComponent(instance: any) {
+      // 调用setup 函数，拿到setup函数的返回值
+    
+      const Component = instance.vnode.type;
+      instance.proxy = new Proxy({}, {
+        get(target, key) {
+          // setupState 情况 (this.xxx, xxx是setup的返回对象的key)
+          const {setupState} = instance;
+          if (key in setupState) {
+            return setupState[key];
+          }
+          // key -> $el
+          if (key === "$el") {
+            return instance.vnode.el
+          }
+        }
+      })
+      // ...
+    ```
+
+- 把代理对象绑定到render的this上
+
+    ```typescript
+    function setupRenderEffect(instance:any,vnode， container) {
+      const {proxy} = instance;
+      const subTree = instance.render.call(proxy)
+      vnode.el = subTree.el
+      // ...
+    ```
+
+    
