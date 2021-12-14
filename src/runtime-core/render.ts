@@ -9,11 +9,11 @@ export function render(vnode, container) {
 
 function patch(vnode: any, container: any) {
   // 当vnode.type的值时，组件是object，element是string，这样区分组件和元素
-  console.log(typeof vnode.type)
-  if(typeof vnode.type === 'string'){
+  console.log(typeof vnode.type);
+  if (typeof vnode.type === "string") {
     // patch element
     processElement(vnode, container);
-  } else if (isObject(vnode.type)){
+  } else if (isObject(vnode.type)) {
     // patch 组件
     processComponent(vnode, container);
   }
@@ -21,40 +21,40 @@ function patch(vnode: any, container: any) {
 function processElement(vnode: any, container: any) {
   // 包含初始化和更新流程
   // init
-  mountElement(vnode, container)
+  mountElement(vnode, container);
 }
 function mountElement(vnode: any, container: any) {
-  const el = document.createElement(vnode.type);
+  const el = (vnode.el) = document.createElement(vnode.type);
 
-  const {props, children} = vnode
+  const { props, children } = vnode;
   // string array
-  if (typeof children === 'string') {
-    el.textContent = children
+  if (typeof children === "string") {
+    el.textContent = children;
   } else if (Array.isArray(children)) {
-    mountChildren(vnode, el)
+    mountChildren(vnode, el);
   }
-  for(let key in props) {
-    let val = props[key]
-    el.setAttribute(key, val)
+  for (let key in props) {
+    let val = props[key];
+    el.setAttribute(key, val);
   }
-  container.append(el)
+  container.append(el);
 }
 function mountChildren(vnode, container) {
-  vnode.children.forEach(v => {
-    patch(v, container)
-  })
+  vnode.children.forEach((v) => {
+    patch(v, container);
+  });
 }
 function processComponent(vnode: any, container: any) {
   mountComponent(vnode, container);
 }
 
-function mountComponent(vnode: any, container: any) {
+function mountComponent(initialVNode: any, container: any) {
   // 根据虚拟节点创建组件实例
-  const instance = createComponentInstance(vnode);
+  const instance = createComponentInstance(initialVNode);
 
   // 初始化，收集信息，instance挂载相关属性，方法, 装箱
   setupComponent(instance);
-  
+
   // 渲染组件，调用组件的render方法
   // 组件 -> const App = {
   //   render() {
@@ -69,12 +69,12 @@ function mountComponent(vnode: any, container: any) {
 
   // 一个组件不会真实渲染出来，渲染的是组件的render函数内部的element值，拆箱过程
   // render 返回的subTree 给patch，如果是组件继续递归，如果是element 则渲染
-  setupRenderEffect(instance, container);
+  setupRenderEffect(instance, initialVNode, container);
 }
-function setupRenderEffect(instance:any, container) {
-  const subTree = instance.render()
+function setupRenderEffect(instance: any,initialVNode: any,container) {
+  const { proxy } = instance;
+  const subTree = instance.render.call(proxy);
   // vnode -> element -> mountElement
-  patch(subTree, container)
+  patch(subTree, container);
+  initialVNode.el = subTree.el
 }
-
-
