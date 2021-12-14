@@ -1002,7 +1002,7 @@ export default {
 - children 判断是string 还是 array
 - 如果是array，再次循环 patch
 
-#### v0.1.3
+#### v0.1.4
 1. 如果获取组件的this，也就是想拿到children的this值，有多种情况，我们暂时分为两大类
 
 - 如果是setupState里面的值，只需要把setup的返回对象绑定到render函数即可
