@@ -1383,5 +1383,61 @@ function processText(vnode: any, container: any) {
   container.append(text);
 }
 ```
+
 #### v0.1.10
+
 1. getCurrentInstance
+
+#### v0.1.11
+
+1. provide 存
+
+- key value 存在当前组件实例 instance 对象上
+- 所以 provide inject 必须在 setup 里面调用
+
+2. inject 取
+
+- 取的时候到相应的父组件找 provide,所有找 parentComponent 是关键
+
+3. instance 对象上挂载 parent 和 provides 属性
+
+- 如果自身有 provides 那就指向父组件的 provides，但是如果自己的和父组件的 key 相同，那么父组件的就被覆盖了。
+- 采用 js 原型链的方式解决这个问题，初始化 provides = currentInstance.provides = Object.create(parentProvides);
+- 判断一下初始化时机 if (provides === parentProvides) {
+
+4. inject
+
+- 添加默认值情况
+
+```typescript
+import { getCurrentInstance } from "./component";
+
+export function provide(key, value) {
+  const currentInstance: any = getCurrentInstance();
+
+  if (currentInstance) {
+    let { provides } = currentInstance;
+    const parentProvides = currentInstance.parent.provides;
+
+    // 初始化
+    if (provides === parentProvides) {
+      provides = currentInstance.provides = Object.create(parentProvides);
+    }
+    provides[key] = value;
+  }
+}
+export function inject(key, defaultValue) {
+  const currentInstance: any = getCurrentInstance();
+  if (currentInstance) {
+    const parentProvides = currentInstance.parent.provides;
+    if (key in parentProvides) {
+      return parentProvides[key];
+    } else if (defaultValue) {
+      if (typeof defaultValue === "function") {
+        return defaultValue();
+      }
+      return defaultValue;
+    }
+  }
+}
+```
