@@ -1259,5 +1259,127 @@ export function emit(instance, event, ...arg) {
   handler && handler(...arg);
 }
 ```
+
 #### v0.1.8
+
 1. 插槽
+
+#### v0.1.9
+
+1. Fragment 只渲染 children 上一版本存在多渲染一个 div 的问题
+
+```typescript
+/**
+ * vnode 类型只有string 组件
+ * 要添加 Fragment 类型，只渲染 children
+ * patch 后有个mountChildren(vnode, container),这样就可以实现了只渲染children
+ * 因为默认有一个container
+ *
+ * */
+export function renderSlots(slots, name, props) {
+  const slot = slots[name];
+  if (slot) {
+    if (typeof slot === "function") {
+      return createVNode(Fragment, {}, slot(props));
+    }
+  }
+}
+
+export function createVNode(type, props?, children?) {
+  const vnode = {
+    type,
+    props,
+    children,
+    shapeFlag: getShapeFlag(type),
+    el: null,
+  };
+
+  if (typeof children === "string") {
+    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.TEXT_CHILDREN;
+  } else if (Array.isArray(children)) {
+    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.ARRAY_CHILDREN;
+  }
+
+  // slots children
+  // 组件 + children object
+  if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+    if (typeof children === "object") {
+      vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN;
+    }
+  }
+  return vnode;
+}
+
+function patch(vnode: any, container: any) {
+  // 当vnode.type的值时，组件是object，element是string，这样区分组件和元素
+  const { type, shapeFlag } = vnode;
+  switch (type) {
+    case Fragment:
+      processFragment(vnode, container);
+      break;
+    default:
+      if (shapeFlag & ShapeFlags.ELEMENT) {
+        processElement(vnode, container);
+      } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+        processComponent(vnode, container);
+      }
+  }
+}
+
+function processFragment(vnode: any, container: any) {
+  mountChildren(vnode, container);
+}
+```
+
+#### v0.1.9
+
+1. text 节点，同样不能渲染，因为 vnode 类型只有 元素类型的字符串(div, p, span)和组件类型和 Fragment
+
+2. 需要给 vnode 添加一个创建 文本节点的方式
+
+3. 应用
+
+```typescript
+export const APP = {
+  render() {
+    const foo = h(
+      Foo,
+      {},
+      {
+        header: ({ age }) => [
+          h("p", {}, "header" + age),
+          createTextVNode("text vnode"),
+        ],
+      }
+    );
+    return h("div", {}, [foo]);
+  },
+  setup() {
+    return {};
+  },
+};
+```
+
+4. 实现
+
+```typescript
+export function createTextVNode(text: string) {
+  return createVNode(Text, {}, text)
+}
+
+// 虚拟节点的children就是 text
+// patch 区分一下
+function patch(vnode: any, container: any) {
+  const { type, shapeFlag } = vnode;
+  switch (type) {
+    case Text:
+      processText(vnode, container);
+      break;
+    //...
+
+function processText(vnode: any, container: any) {
+  const { children } = vnode;
+  const text = document.createTextNode(children);
+  container.append(text);
+}
+```

@@ -37,6 +37,10 @@ export function createVNode(type, props?, children?) {
   }
   return vnode;
 }
+export function createTextVNode(text: string) {
+  return createVNode(Text, {}, text)
+}
+
 function getShapeFlag(type: any) {
   // vnode 是element元素 还是 组件 0001 0010
   return typeof type === "string"

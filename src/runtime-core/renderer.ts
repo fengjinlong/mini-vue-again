@@ -1,5 +1,6 @@
 import { ShapeFlags } from "../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
+import { Fragment, Text } from "./vnode";
 
 // 查查初始化时候调用render了么？
 export function render(vnode, container) {
@@ -10,17 +11,38 @@ export function render(vnode, container) {
 function patch(vnode: any, container: any) {
   // 当vnode.type的值时，组件是object，element是string，这样区分组件和元素
 
-  const { shapeFlag } = vnode;
-  // if (typeof vnode.type === "string") {
-  if (shapeFlag & ShapeFlags.ELEMENT) {
-    // patch element
-    processElement(vnode, container);
-  // } else if (isObject(vnode.type)) {
-  } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-    // patch 组件
-    processComponent(vnode, container);
+  const { type, shapeFlag } = vnode;
+
+  switch (type) {
+    case Fragment:
+      processFragment(vnode, container);
+      break;
+    case Text:
+      processText(vnode, container);
+      break;
+    default:
+      // if (typeof vnode.type === "string") {
+      if (shapeFlag & ShapeFlags.ELEMENT) {
+        // patch element
+        processElement(vnode, container);
+        // } else if (isObject(vnode.type)) {
+      } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+        // patch 组件
+        processComponent(vnode, container);
+      }
   }
 }
+
+function processText(vnode: any, container: any) {
+  const { children } = vnode;
+  const text = document.createTextNode(children);
+  container.append(text);
+}
+
+function processFragment(vnode: any, container: any) {
+  mountChildren(vnode, container);
+}
+
 function processElement(vnode: any, container: any) {
   // 包含初始化和更新流程
   // init
@@ -29,7 +51,7 @@ function processElement(vnode: any, container: any) {
 function mountElement(vnode: any, container: any) {
   const el = (vnode.el = document.createElement(vnode.type));
 
-  const { props, children,shapeFlag } = vnode;
+  const { props, children, shapeFlag } = vnode;
   // string array
   // if (typeof children === "string") {
   if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
@@ -39,10 +61,10 @@ function mountElement(vnode: any, container: any) {
   }
   for (let key in props) {
     let val = props[key];
-    const isOn = (key: string) => /^on[A-Z]/.test(key)
+    const isOn = (key: string) => /^on[A-Z]/.test(key);
     if (isOn(key)) {
-      const event = key.slice(2).toLowerCase()
-      el.addEventListener(event, val)
+      const event = key.slice(2).toLowerCase();
+      el.addEventListener(event, val);
     } else {
       el.setAttribute(key, val);
     }
