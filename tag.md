@@ -1259,3 +1259,5 @@ export function emit(instance, event, ...arg) {
   handler && handler(...arg);
 }
 ```
+#### v0.1.8
+1. 插槽
