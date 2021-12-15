@@ -1383,3 +1383,5 @@ function processText(vnode: any, container: any) {
   container.append(text);
 }
 ```
+#### v0.1.10
+1. getCurrentInstance
