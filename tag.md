@@ -1571,6 +1571,7 @@ export function createRenderer(options) {
 ```
 
 4. 调用方法
+
 ```typescript
 // 拿 canvas 举例子
 const renderer = createRenderer({
@@ -1595,4 +1596,106 @@ const renderer = createRenderer({
 });
 // 调用
 renderer.createApp(App).mount(game.stage);
+```
+
+#### v0.2.0
+
+1. 区分更新流程
+
+- demo
+
+```typescript
+  // 点击 btn，页面数据改变
+  setup() {
+    const count = ref(0);
+    const onClick = () => {
+      count.value++;
+    };
+    return {
+      count,
+      onClick,
+    };
+  },
+  render() {
+    return h(
+      "div",
+      {
+        id: "root",
+      },
+      [
+        h("div", {}, "count:" + this.count), // 依赖收集
+        h(
+          "button",
+          {
+            onClick: this.onClick,
+          },
+          "click"
+        ),
+      ]
+    );
+  },
+```
+
+- 页面数据的改变肯定是 虚拟节点 subTree 的改变，定位到 setupRenderEffect 函数
+
+```typescript
+function setupRenderEffect(instance: any, initialVNode: any, container) {
+  const { proxy } = instance;
+  // 保存一下第一次的虚拟节点
+  const subTree = (instance.subTree = instance.render.call(proxy));
+  // vnode -> element -> mountElement
+  /**
+   * 仅仅加上effect patch 会当初都是初始化的操作，所以需要添加区分初始化和更新
+   * 给instance添加一个变量表示 isMounted
+   */
+  patch(null, subTree, container, instance);
+  initialVNode.el = subTree.el;
+}
+```
+
+- 数据变更，触发一下相应式就可以了，添加 effect。同时通过 inMounted 判断是初始化还是更新。
+- 获取到 上一次的 subTree ，更新逻辑对比 两次的 subTree
+
+```typescript
+  function setupRenderEffect(instance: any, initialVNode: any, container) {
+    effect(() => {
+      if (instance.isMounted) {
+        const { proxy } = instance;
+        // 保存一下第一次的虚拟节点
+        const subTree = (instance.subTree = instance.render.call(proxy));
+        // vnode -> element -> mountElement
+        /**
+         * 仅仅加上effect patch 会当初都是初始化的操作，所以需要添加区分初始化和更新
+         * 给instance添加一个变量表示 isMounted
+         */
+        patch(null, subTree, container, instance);
+        initialVNode.el = subTree.el;
+        instance.isMounted = false;
+      } else {
+        const { proxy } = instance;
+        // 新的虚拟节点
+        const subTree = instance.render.call(proxy);
+        // 上一个虚拟节点
+        const prevSubTree = instance.subTree;
+        // 更改保存的
+        instance.subTree = prevSubTree;
+        patch(prevSubTree, subTree, container, instance);
+      }
+    });
+  }
+
+  // patch processElement
+  function patch(n1, n2: any, container: any, parentComponent) {
+    processElement(...)
+  }
+  function processElement(n1, n2: any, container: any, parentComponent) {
+    // 包含初始化和更新流程
+    if (!n1) {
+      // init
+      mountElement(n2, container, parentComponent);
+    } else {
+      // update 逻辑
+      patchElement(n1, n2, container);
+    }
+  }
 ```

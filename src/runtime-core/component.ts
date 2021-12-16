@@ -1,4 +1,5 @@
 import { shallowReadonly } from "../reactivity/reactive";
+import { proxyRefs } from "../reactivity/ref";
 import { emit } from "./componentEmit";
 import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
@@ -10,6 +11,8 @@ export function createComponentInstance(vnode, parent) {
     vnode,
     type: vnode.type,
     setupState: {},
+    isMounted: true,
+    // subTree:'',
     emit: () => {},
     slots: {},
     provides: parent ? parent.provides : {},
@@ -51,7 +54,7 @@ function handleSetupResult(instance: any, setupResult: any) {
   // 返回值是function，那就是render函数
   // 返回值是Object，那需要把这个对象挂到组件上下文
   if (typeof setupResult === "object") {
-    instance.setupState = setupResult
+    instance.setupState = proxyRefs(setupResult)
   }
   
   // 保证组件render有值

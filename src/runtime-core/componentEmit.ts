@@ -6,7 +6,7 @@ export function emit(instance, event, ...arg) {
   // add-add -> addAdd
  
   const handlerName = toHandlerKey(camelize(event))
-  console.log(handlerName)
+  // console.log(handlerName)
   const handler = props[handlerName]
   handler && handler(...arg)
 }

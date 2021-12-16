@@ -1,10 +1,10 @@
 import { createRenderer } from "../runtime-core";
 function createElement(type: string) {
-  console.log("dom ------api")
+  // console.log("dom ------api")
   return document.createElement(type);
 }
 function patchProps(el, key, val) {
-  console.log("dom ------api")
+  // console.log("dom ------api")
   const isOn = (key: string) => /^on[A-Z]/.test(key);
   if (isOn(key)) {
     const event = key.slice(2).toLowerCase();
@@ -14,7 +14,7 @@ function patchProps(el, key, val) {
   }
 }
 function insert(el, parent) {
-  console.log("dom ------api")
+  // console.log("dom ------api")
   parent.append(el);
 }
 
@@ -49,3 +49,4 @@ export function createApp(...args) {
 }
 
 export * from "../runtime-core"
+export * from "../reactivity"
