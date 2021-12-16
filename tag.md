@@ -1441,3 +1441,158 @@ export function inject(key, defaultValue) {
   }
 }
 ```
+
+#### v0.1.12
+
+1. 自定义渲染器 createRenderer
+
+- 默认情况下，patch 过程中元素的创建 mountElement，属性的挂载，元素的插入都是基于 dom 的
+
+```typescript
+// 创建
+const el = (vnode.el = document.createElement(vnode.type));
+// 挂载属性
+el.setAttribute(key, val);
+// 插入元素
+container.append(el);
+```
+
+- 如果脱离的 dom 平台，那么 patch 也就不能运行了。
+
+- 所以需要一种 api，由用户根据不同平台，传入相应的元素创建修改等 api，用户不传只处理默认的 dom 的 api
+
+- 将之前的 patch 抽离出来让用户自定义传入 相应的 元素的创建，属性修改，插入等 api
+
+2. 之前的流程 (默认调用的事 dom 的 api)
+
+```typescript
+// 过程省略部分代码
+// 用户创建应用
+import { createApp } from "../../lib/guide-mini-vue.esm.js";
+createApp(App).mount(rootContainer);
+
+// createApp
+function createApp(rootComponent) {
+  return {
+    mount(rootContainer) {
+      const vnode = createVNode(rootComponent);
+      render(vnode, rootContainer);
+    },
+  };
+}
+
+// render
+function render(vnode, container) {
+  // patch
+  patch(vnode, container, null);
+}
+
+// patch
+function patch(vnode: any, container: any, parentComponent) {
+  mountElement(vnode, container, parentComponent);
+}
+
+// mountElement
+function mountElement(vnode: any, container: any, parentComponent) {
+  // 创建dom
+  const el = (vnode.el = document.createElement(vnode.type));
+  // 添加方法与属性
+  el.addEventListener(event, val);
+  el.setAttribute(key, val);
+  // 插入元素
+  container.append(el);
+}
+
+// 到此dom的创建，更改属性，插入等操作完成
+```
+
+3. 用户定制传入相应 api 的流程
+
+```typescript
+// 过程省略部分代码
+
+// 用户创建应用
+renderer.createApp(App).mount(game.stage);
+
+// renderer
+export function createRenderer(options) {
+  function render(vnode, container) {
+    patch(vnode, container, null);
+  }
+  return {
+    createApp: createAppAPI(render),
+  };
+}
+
+// 用户创建应用也就是
+createAppAPI(render)(App).mount(game.stage);
+
+// createAppAPI
+export function createAppAPI(render) {
+  return function createApp(rootComponent) {
+    return {
+      mount(rootContainer) {
+        render(vnode, rootContainer);
+      },
+    };
+  };
+}
+
+// render
+function render(vnode, container) {
+  patch(vnode, container, null);
+}
+
+// patch
+export function createRenderer(options) {
+  const {
+    createElement: hostCreateElement,
+    patchProps: hostPatchProps,
+    insert: hostInsert,
+  } = options;
+  function render(vnode, container) {
+    patch(vnode, container, null);
+  }
+  function patch(vnode: any, container: any, parentComponent) {
+    mountElement(vnode, container, parentComponent);
+  }
+  // mountElement
+  function mountElement(vnode: any, container: any, parentComponent)
+  // 用户传入创建元素api hostCreateElement
+    const el = (vnode.el = hostCreateElement(vnode.type));
+  // 用户传入的属性操作api
+    hostPatchProps(el, key, val);
+  // 用户传入的插入api
+    hostInsert(el, container);
+  }
+}
+// 到此，创建，属性操作，插入都是用户通过createRenderer(options) 传过来的
+
+```
+
+4. 调用方法
+```typescript
+// 拿 canvas 举例子
+const renderer = createRenderer({
+  // canvas 的创建
+  createElement(type) {
+    if (type === "rect") {
+      const rect = new PIXI.Graphics();
+      rect.beginFill(0xff0000);
+      rect.drawRect(0, 0, 100, 100);
+      rect.endFill();
+      return rect;
+    }
+  },
+  // canvas 元素属性操作
+  patchProp(el, key, val) {
+    el[key] = val;
+  },
+  // canvas 元素插入
+  insert(el, parent) {
+    parent.addChild(el);
+  },
+});
+// 调用
+renderer.createApp(App).mount(game.stage);
+```
