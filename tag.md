@@ -1547,7 +1547,7 @@ function render(vnode, container) {
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
-    patchProps: hostPatchProps,
+    patchProps: hostPatchProp,
     insert: hostInsert,
   } = options;
   function render(vnode, container) {
@@ -1561,7 +1561,7 @@ export function createRenderer(options) {
   // 用户传入创建元素api hostCreateElement
     const el = (vnode.el = hostCreateElement(vnode.type));
   // 用户传入的属性操作api
-    hostPatchProps(el, key, val);
+    hostPatchProp(el, key, val);
   // 用户传入的插入api
     hostInsert(el, container);
   }
@@ -1698,4 +1698,76 @@ function setupRenderEffect(instance: any, initialVNode: any, container) {
       patchElement(n1, n2, container);
     }
   }
+```
+
+#### v0.2.1
+
+##### 分三种场景讨论 props 的变更
+
+1. 第一种场景 修改 props 的属性 {foo: foo} -> {foo: new-foo}
+
+```typescript
+function patchElement(n1, n2, container) {
+  // 获取新，老 prosp
+  const oldProps = n1.props || {};
+  const newProps = n2.props || {};
+  // 对比新老props
+
+  // 第二个要取代第一个
+  const el = (n2.el = n1.el);
+  patchProps(el, oldProps, newProps);
+}
+
+function patchProps(el, oldProps, newProps) {
+  for (const key in newProps) {
+    // 对比props对象的属性
+    const prveProp = oldProps[key];
+    const nextprop = newProps[key];
+    if (prveProp !== nextprop) {
+      // 调用之前的 添加属性方法,需要一个 el
+      // 多传一个参数，同时需要修改 hostPatchProp 方法
+      hostPatchProp(el, key, prveProp, nextprop);
+      /**
+       * 这里是更新逻辑
+       * 当初始化时候这样调用 hostPatchProp(el, key, null, val);
+       */
+    }
+  }
+}
+// hostPatchProp -> patchProp
+function patchProp(el, key, prevVal, nextVal) {
+  const isOn = (key: string) => /^on[A-Z]/.test(key);
+  if (isOn(key)) {
+    const event = key.slice(2).toLowerCase();
+    el.addEventListener(event, nextVal);
+  } else {
+    el.setAttribute(key, nextVal);
+  }
+}
+```
+
+2. 第二种场景 给某一个 prop 赋值为 null 或 undefined {foo: foo} -> {foo: undefined},那么直接删掉
+
+```typescript
+function patchProp(el, key, prevVal, nextVal) {
+  if (nextVal === undefined || nextVal === null) {
+    el.removeAttribute(key);
+  } else {
+    el.setAttribute(key, nextVal);
+  }
+}
+```
+
+3. 第三种场景, 旧的 props 里面有 prop 而新的没有，需要删掉旧的里面的 prop
+
+```typescript
+function patchProps(el, oldProps, newProps) {
+  // ...
+  // oldProps 里的 prop 不在 newProps 里面，遍历旧的
+  for (const key in oldProps) {
+    if (!(key in newProps)) {
+      hostPatchProp(el, key, oldProps[key], null);
+    }
+  }
+}
 ```

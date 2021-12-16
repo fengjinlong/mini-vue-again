@@ -7,7 +7,7 @@ import { Fragment, Text } from "./vnode";
 export function createRenderer(options) {
   const {
     createElement: hostCreateElement,
-    patchProps: hostPatchProps,
+    patchProp: hostPatchProp,
     insert: hostInsert,
   } = options;
 
@@ -64,9 +64,43 @@ export function createRenderer(options) {
     }
   }
   function patchElement(n1, n2, container) {
-    console.log("n1", n1);
-    console.log("n2", n2);
+    // console.log("n1", n1);
+    // console.log("n2", n2);
+
+    // 获取新，老 prosp
+    const oldProps = n1.props || {};
+    const newProps = n2.props || {};
+    // 对比新老props
+    const el = (n2.el = n1.el);
+    patchProps(el, oldProps, newProps);
   }
+  function patchProps(el, oldProps, newProps) {
+    if (oldProps !== newProps) {
+      // newProps 里面的 prop 不在 oldProps 里面，遍历新的
+      for (const key in newProps) {
+        // 对比props对象的属性
+        const prveProp = oldProps[key];
+        const nextprop = newProps[key];
+        if (prveProp !== nextprop) {
+          console.log(prveProp, nextprop);
+          // 调用之前的 添加属性方法,需要一个 el
+          // 多传一个参数，同时需要修改 hostPatchProp 方法
+          // hostPatchProp(el, key, prveProp, nextprop)
+          hostPatchProp(el, key, prveProp, nextprop);
+        }
+      }
+
+      // oldProps 里的 prop 不在 newProps 里面，遍历旧的
+      if (oldProps !== {}) {
+        for (const key in oldProps) {
+          if (!(key in newProps)) {
+            hostPatchProp(el, key, oldProps[key], null);
+          }
+        }
+      }
+    }
+  }
+
   function mountElement(vnode: any, container: any, parentComponent) {
     // canvas new Element
     // const el = (vnode.el = document.createElement(vnode.type));
@@ -80,10 +114,10 @@ export function createRenderer(options) {
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       mountChildren(vnode, el, parentComponent);
     }
-    for (let key in props) {
-      let val = props[key];
+    for (const key in props) {
+      const val = props[key];
 
-      hostPatchProps(el, key, val);
+      hostPatchProp(el, key, null, val);
     }
     // canvas el.x = 10
     // container.append(el);
@@ -129,7 +163,6 @@ export function createRenderer(options) {
         // 保存一下第一次的虚拟节点
         const subTree = (instance.subTree = instance.render.call(proxy));
         // vnode -> element -> mountElement
-        console.log(subTree);
         /**
          * 仅仅加上effect patch 会当初都是初始化的操作，所以需要添加区分初始化和更新
          * 给instance添加一个变量表示 isMounted
