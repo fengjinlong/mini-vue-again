@@ -9,6 +9,8 @@ export function createRenderer(options) {
     createElement: hostCreateElement,
     patchProp: hostPatchProp,
     insert: hostInsert,
+    setElementText: hostSetElementText,
+    remove: hostRemove,
   } = options;
 
   // 查查初始化时候调用render了么？
@@ -51,7 +53,7 @@ export function createRenderer(options) {
   }
 
   function processFragment(n1, n2: any, container: any, parentComponent) {
-    mountChildren(n2, container, parentComponent);
+    mountChildren(n2.children, container, parentComponent);
   }
 
   function processElement(n1, n2: any, container: any, parentComponent) {
@@ -60,10 +62,10 @@ export function createRenderer(options) {
     if (!n1) {
       mountElement(n2, container, parentComponent);
     } else {
-      patchElement(n1, n2, container);
+      patchElement(n1, n2, container, parentComponent);
     }
   }
-  function patchElement(n1, n2, container) {
+  function patchElement(n1, n2, container, parentComponent) {
     // console.log("n1", n1);
     // console.log("n2", n2);
 
@@ -73,6 +75,71 @@ export function createRenderer(options) {
     // 对比新老props
     const el = (n2.el = n1.el);
     patchProps(el, oldProps, newProps);
+
+    // 对比children
+    patchChildren(n1, n2, el, parentComponent);
+  }
+  function patchChildren(n1, n2, container, parentComponent) {
+    // 子节点只有两种类型 文本节点 数组
+
+    /* 
+      1 新的是text，老的是array
+      2 删除老的array 添加 文本节点
+    */
+
+    /* 
+      1 新的 老的都是 文本节点
+      2 对比是否相同，不相同的话 替换老的节点  
+    */
+
+    /* 
+      1 新的是数组，老的是文本
+      2 删除老的，挂载新的 
+    */
+    const { shapeFlag } = n2;
+    const c2 = n2.children;
+    const c1 = n1.children;
+    const prevshapeFlag = n1.shapeFlag;
+
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      // if (prevshapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      //   // 1 把老的 children 删除
+      //   unmountChildren(n1.children);
+      //   // 2 添加 text
+      //   hostSetElementText(container, c2);
+      // } else {
+      //   // 新老都是文本节点
+      //   if(c1 !== c2) {
+      //     hostSetElementText(container, c2);
+      //   }
+      // }
+      // 重构一下
+      if (prevshapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        unmountChildren(n1.children);
+      }
+      if (c1 !== c2) {
+        hostSetElementText(container, c2);
+      }
+    } else {
+      // 新的是array 老的是text
+
+      if (prevshapeFlag & ShapeFlags.TEXT_CHILDREN) {
+        hostSetElementText(container, "");
+        mountChildren(c2, container, parentComponent);
+      }
+    }
+  }
+  /**
+   * @description 删除children 节点
+   * @author Werewolf
+   * @date 2021-12-17
+   * @param {*} children
+   */
+  function unmountChildren(children) {
+    for (var i = 0; i < children.length; i++) {
+      const el = children[i].el;
+      hostRemove(el);
+    }
   }
   function patchProps(el, oldProps, newProps) {
     if (oldProps !== newProps) {
@@ -112,7 +179,7 @@ export function createRenderer(options) {
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
       el.textContent = children;
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-      mountChildren(vnode, el, parentComponent);
+      mountChildren(vnode.children, el, parentComponent);
     }
     for (const key in props) {
       const val = props[key];
@@ -124,8 +191,16 @@ export function createRenderer(options) {
     hostInsert(el, container);
     // canvas addChild()
   }
-  function mountChildren(vnode, container, parentComponent) {
-    vnode.children.forEach((v) => {
+  /**
+   * @description 挂载数组节点
+   * @author Werewolf
+   * @date 2021-12-17
+   * @param {*} children [vnode1,vnode2]
+   * @param {*} container
+   * @param {*} parentComponent
+   */
+  function mountChildren(children, container, parentComponent) {
+    children.forEach((v) => {
       patch(null, v, container, parentComponent);
     });
   }

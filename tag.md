@@ -1771,3 +1771,86 @@ function patchProps(el, oldProps, newProps) {
   }
 }
 ```
+
+#### v0.2.2
+
+##### diff 更新 children，分四种情况。children 只有两种类型，文本，数组
+
+| 情况 | 老节点 | 新节点 |
+| ---- | ------ | ------ |
+| 1    | array  | text   |
+| 2    | text   | text   |
+| 3    | text   | array  |
+| 4    | array  | array  |
+
+1. 第一种情况
+
+```typescript
+/**
+ *
+ * 1 新的是text，老的是array
+ * 2 删除老的array 添加 文本节点
+ *
+ */
+function patchChildren(n1, n2, container, parentComponent) {
+  const c1 = n1.children;
+  const { shapeFlag } = n2;
+  const c2 = n2.children;
+  const prevshapeFlag = n1.shapeFlag;
+
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+    if (prevshapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      // 1 把老的 children 删除
+      unmountChildren(n1.children);
+      // 2 添加 text
+      hostSetElementText(container, c2);
+    }
+  }
+}
+```
+
+2. 第二种情况
+
+```typescript
+/**
+ * 1 新的 老的都是 文本节点
+ * 2 对比是否相同，不相同的话 替换老的节点
+ *
+ */
+function patchChildren(n1, n2, container, parentComponent) {
+  // ...
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+    if (prevshapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      // 1
+    } else {
+      // 2
+      if (c1 !== c2) {
+        hostSetElementText(container, c2);
+      }
+    }
+  } else  {
+    // 3
+  }
+}
+```
+
+3. 第三种情况
+
+```typescript
+function patchChildren(n1, n2, container, parentComponent) {
+  // ...
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+    if (prevshapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      // 1
+    } else {
+      // 2
+    }
+  } else {
+      // 3
+    if (prevshapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      hostSetElementText(container, "");
+      mountChildren(c2, container, parentComponent);
+    }
+  }
+}
+```

@@ -21,10 +21,35 @@ function insert(el, parent) {
   // console.log("dom ------api")
   parent.append(el);
 }
+/**
+ * @description 删除子节点
+ * @author Werewolf
+ * @date 2021-12-17
+ * @param {*} child 子节点
+ */
+function remove(child) {
+  const parent = child.parentNode;
+  if (parent) {
+    parent.removeChild(child)
+  }
+}
+
+/**
+ * @description 设置text 节点
+ * @author Werewolf
+ * @date 2021-12-17
+ * @param {*} el 父容器
+ * @param {*} text 子节点
+ */
+function setElementText(el, text) {
+  el.textContent = text
+}
 
 const renderer: any= createRenderer({
   createElement,
   patchProp,
+  setElementText,
+  remove,
   insert,
 });
 
