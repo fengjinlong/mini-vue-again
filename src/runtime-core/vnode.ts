@@ -3,8 +3,11 @@ export const Fragment = Symbol("Fragment");
 export const Text = Symbol("Text");
 
 export function createVNode(type, props?, children?) {
+  // console.log(props)
+  // 相同的节点 type key 相同
   const vnode = {
     type,
+    key: props && props.key,
     props,
     children,
     shapeFlag: getShapeFlag(type),

@@ -126,7 +126,63 @@ export function createRenderer(options) {
       if (prevshapeFlag & ShapeFlags.TEXT_CHILDREN) {
         hostSetElementText(container, "");
         mountChildren(c2, container, parentComponent);
+      } else {
+        // array diff array
+        pathKeyedChildren(c1, c2, container, parentComponent);
       }
+    }
+  }
+
+  /**
+   *
+   *
+   * @param {*} c1 老数组
+   * @param {*} c2 新数组
+   */
+  function pathKeyedChildren(c1, c2, container, parentComponent) {
+    // 初始指针 i
+    let i = 0;
+    let e1 = c1.length - 1;
+    let e2 = c2.length - 1;
+
+    function isSameNodeType(n1, n2) {
+      // 相同节点 type key 相同
+      return n1.type === n2.type && n1.key === n2.key;
+    }
+    // 初始指针不能超过两个数组
+
+    /**
+     * 左侧对吧
+     * ab c
+     * ab de
+     */
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i];
+      const n2 = c2[i];
+
+      if (isSameNodeType(n1, n2)) {
+        patch(n1, n2, container, parentComponent);
+      } else {
+        break;
+      }
+      i++;
+    }
+    /**
+     * 右侧对比
+     * a bc
+     * de bc
+     */
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i];
+      const n2 = c2[i];
+
+      if (isSameNodeType(n1, n2)) {
+        patch(n1, n2, container, parentComponent);
+      } else {
+        break;
+      }
+      e1--;
+      e2--;
     }
   }
   /**
