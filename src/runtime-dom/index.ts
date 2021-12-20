@@ -17,9 +17,21 @@ function patchProp(el, key, prevVal,nextVal) {
     }
   }
 }
-function insert(el, parent) {
+/**
+ * @description 将子节点插入到指定位置anchor，没有指定位置默认插入到最后
+ * @author Werewolf
+ * @date 2021-12-20
+ * @param {*} child
+ * @param {*} parent
+ * @param {*} anchor 将要插在这个节点之前
+ */
+function insert(child, parent, anchor) {
   // console.log("dom ------api")
-  parent.append(el);
+
+  // 插入到最后
+  // parent.append(child) 等价于 parent.insertBefore(child, parent, null)
+// console.log()
+  parent.insertBefore(child, anchor || null);
 }
 /**
  * @description 删除子节点
