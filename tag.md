@@ -1828,7 +1828,7 @@ function patchChildren(n1, n2, container, parentComponent) {
         hostSetElementText(container, c2);
       }
     }
-  } else  {
+  } else {
     // 3
   }
 }
@@ -1846,7 +1846,7 @@ function patchChildren(n1, n2, container, parentComponent) {
       // 2
     }
   } else {
-      // 3
+    // 3
     if (prevshapeFlag & ShapeFlags.TEXT_CHILDREN) {
       hostSetElementText(container, "");
       mountChildren(c2, container, parentComponent);
@@ -1854,3 +1854,422 @@ function patchChildren(n1, n2, container, parentComponent) {
   }
 }
 ```
+
+4. 第四种情况 array diff array
+
+#### v0.2.3
+
+##### array diff array
+
+1. 第一种情况 对比左侧相同
+
+- demo
+
+```typescript
+// (a b) c
+// (a b) d e
+
+const prevChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "C" }, "C"),
+];
+const nextChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "D" }, "D"),
+  h("p", { key: "E" }, "E"),
+];
+```
+
+- 相同节点的判定
+
+```typescript
+function isSameNodeType(n1, n2) {
+  // 相同节点 type key 相同
+  return n1.type === n2.type && n1.key === n2.key;
+}
+```
+
+- 实现
+
+```typescript
+function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  // 初始指针 i
+  let i = 0;
+  let l2 = c2.length;
+  // 新数组
+  let e1 = c1.length - 1;
+  // 老数组
+  let e2 = l2 - 1;
+
+  // 初始指针不能超过两个数组
+  /**
+   * 第一种情况
+   * 左侧对吧
+   * ab c
+   * ab de
+   */
+  while (i <= e1 && i <= e2) {
+    // 确定了 i 位置
+    const n1 = c1[i];
+    const n2 = c2[i];
+
+    if (isSameNodeType(n1, n2)) {
+      patch(n1, n2, container, parentComponent, parentAnthor);
+    } else {
+      break;
+    }
+    i++;
+  }
+
+  // 到此位置，已经对比并更新完 左侧相同的节点 ab
+}
+```
+
+2. 第二种情况 对比右侧相同的
+
+- dome
+
+```typescript
+// a (b c)
+// d e (b c)
+const prevChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "C" }, "C"),
+];
+const nextChildren = [
+  h("p", { key: "D" }, "D"),
+  h("p", { key: "E" }, "E"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "C" }, "C"),
+];
+```
+
+- 实现
+
+```typescript
+function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  // ...
+
+  /**
+   * 第二种情况
+   * 右侧对比
+   * a bc
+   * de bc
+   */
+  while (i <= e1 && i <= e2) {
+    // 确定了 e1 e2 的位置
+
+    const n1 = c1[e1];
+    const n2 = c2[e2];
+
+    if (isSameNodeType(n1, n2)) {
+      patch(n1, n2, container, parentComponent, parentAnthor);
+    } else {
+      break;
+    }
+    e1--;
+    e2--;
+  }
+  // 到此位置，已经对比并更新完 右侧侧相同的节点 bc
+  // 左右都完毕，下面就是对比 中间的不同节点
+  // 这也是 双端对比的 方法，先处理两边相同的节点（简单），然后在处理中间不同的（复杂）
+
+  // ...
+}
+```
+
+3. 第三种情况 新的比老的长 创建新的
+
+- demo
+
+```typescript
+// 分左右两种情况
+
+// 左侧
+// (a b)
+// (a b) c
+// i = 2, e1 = 1, e2 = 2
+const prevChildren = [h("p", { key: "A" }, "A"), h("p", { key: "B" }, "B")];
+const nextChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "C" }, "C"),
+];
+
+// 右侧
+//   (a b)
+// c (a b)
+// i = 0, e1 = -1, e2 = 0
+const prevChildren = [h("p", { key: "A" }, "A"), h("p", { key: "B" }, "B")];
+const nextChildren = [
+  h("p", { key: "C" }, "C"),
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+];
+```
+
+- 实现
+
+```typescript
+function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  // ...
+  // 新
+  let l2 = c2.length;
+
+  /**
+   * 第三种情况
+   * 新的比老的多,两种情况
+   * ab        ab
+   * ab c    c ab
+   *
+   * 左 i = 2, e1 = 1, e2 = 2
+   * 右 i = 0, e1 = -1, e2 = 0
+   *
+   */
+  if (i > e1) {
+    if (i <= e2) {
+      const nextPos = i + 1;
+      const antor = i + 1 > l2 ? null : c2[nextPos].el;
+      while (i <= e2) {
+        // 左 antor为 null，所以在最后插入 c2[i]
+        // 右 antor为 c2[1].el，所以在最后插入 c2[1].el 之前插入 c2[i]
+        patch(null, c2[i], container, parentComponent, antor);
+        i++;
+      }
+    }
+  }
+  // ...
+}
+```
+
+4. 第四种情况 老的比新的长 删除多余的老的
+
+- demo
+
+```typescript
+// 分左右两种情况
+// 左侧
+// (a b) c
+// (a b)
+// i = 2, e1 = 2, e2 = 1
+const prevChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "C" }, "C"),
+];
+const nextChildren = [h("p", { key: "A" }, "A"), h("p", { key: "B" }, "B")];
+
+// 右侧
+// a (b c)
+// (b c)
+// i = 0, e1 = 0, e2 = -1
+
+const prevChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "C" }, "C"),
+];
+const nextChildren = [h("p", { key: "B" }, "B"), h("p", { key: "C" }, "C")];
+```
+
+- 实现
+
+```typescript
+function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  // ...
+
+  if (i > e1) {
+    // 第三种情况
+  } else if (i > e2) {
+    /**
+     * 第四种情况
+     * 新的比老的少, 两种情况
+     * ab c    a bc
+     * ab        bc
+     */
+    while (i <= e1) {
+      hostRemove(c1[i].el);
+      i++;
+    }
+  } else {
+  }
+
+  // ...
+}
+```
+
+5. 第五种情况 对比中间的部分（分三种情况）
+
+**第 1 种情况 老的有，新的没有，删除老节点多余的**
+
+- demo
+
+```typescript
+// 删除老的  (在老的里面存在，新的里面不存在)
+// 5.1
+// a,b,(c,d),f,g
+// a,b,(e,c),f,g
+// D 节点在新的里面是没有的 - 需要删除掉
+// C 节点 props 也发生了变化
+
+const prevChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "C", id: "c-prev" }, "C"),
+  h("p", { key: "D" }, "D"),
+  h("p", { key: "F" }, "F"),
+  h("p", { key: "G" }, "G"),
+];
+
+const nextChildren = [
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+  h("p", { key: "E" }, "E"),
+  h("p", { key: "C", id: "c-next" }, "C"),
+  h("p", { key: "F" }, "F"),
+  h("p", { key: "G" }, "G"),
+];
+```
+
+- 实现
+
+```typescript
+function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  // ...
+
+  if (i > e1) {
+    // 第三种情况
+  } else if (i > e2) {
+    // 第四种情况
+  } else {
+    /**
+     * 第五种情况-1。删除老的d，修改c
+     * 旧 ab cd fg
+     * 新 ab ec fg
+     * 1 旧的里面存在，新的不存在（d），那么需要删除 d。
+     * 如果在ec里面遍历看是否存在d，那么时间复杂度是O(n),如果用 key 映射，那么时间复杂度是O(1)
+     *
+     */
+    let s1 = i;
+    let s2 = i;
+
+    // 映射关系
+    const keyToNewIndexMap = new Map();
+    // 新的映射关系
+    for (let i = s2; i <= e2; i++) {
+      const nextChild = c2[i];
+      keyToNewIndexMap.set(nextChild.key, i);
+    }
+
+    for (let i = s1; i <= e1; i++) {
+      // 老节点 prevChild
+      const prevChild = c1[i];
+
+      let newIndex;
+      /**
+       *  如果 newIndex 存在，说明 prevChild 在新的里面存在。
+       *  如果用户写了key，用key映射查找。如果没写key,用循环查找
+       */
+      if (prevChild.key !== null) {
+        newIndex = keyToNewIndexMap.get(prevChild.key);
+      } else {
+        for (let j = s2; j <= e2; j++) {
+          if (isSameNodeType(c2[j], prevChild)) {
+            newIndex = j;
+            break;
+          }
+        }
+      }
+
+      if (newIndex === undefined) {
+        // 说明不存在prevChild，删掉老的 prevChild
+        hostRemove(prevChild.el);
+      } else {
+        // 存在，继续进行深度对比
+        patch(prevChild, c2[newIndex], container, parentComponent, null);
+      }
+    }
+  }
+
+  // ...
+}
+```
+
+- 优化点
+
+```typescript
+/**
+ * 优化点：当新节点的个数小于老节点点个数，也就是新的已经patch完毕，但是老节点还存在，那么老节点剩下的无需在对比，直接删除
+ * 老 ab cedm fg，新 ab ec fg,当新节点的ec对比完毕，老节点还剩dm，那么直接删除，无需对比
+ *
+ * toBePatched 新节点需要patch的个数
+ * patched 已经处理的个数
+ *
+ */
+function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  // ...
+
+  if (i > e1) {
+    // 第三种情况
+  } else if (i > e2) {
+    // 第四种情况
+  } else {
+    let s1 = i;
+    let s2 = i;
+    const toBePatched = e2 - s2 + 1;
+    let patched = 0;
+
+    // 映射关系
+    const keyToNewIndexMap = new Map();
+
+    // 新的映射关系
+    for (let i = s2; i <= e2; i++) {
+      const nextChild = c2[i];
+      keyToNewIndexMap.set(nextChild.key, i);
+    }
+
+    // 老的映射关系
+    for (let i = s1; i <= e1; i++) {
+      // 老节点 prevChild
+      const prevChild = c1[i];
+      if (patched >= toBePatched) {
+        // 新的已经对比完，但是老的还没完事。直接删除
+        hostRemove(prevChild.el);
+        // 进入下一次循环
+        continue;
+      }
+      let newIndex;
+      /**
+       *  如果 newIndex 存在，说明 prevChild 在新的里面存在。
+       *  如果用户写了key，用key映射查找。如果没写key,用循环查找
+       */
+      if (prevChild.key !== null) {
+        newIndex = keyToNewIndexMap.get(prevChild.key);
+      } else {
+        for (let j = s2; j <= e2; j++) {
+          if (isSameNodeType(c2[j], prevChild)) {
+            newIndex = j;
+            break;
+          }
+        }
+      }
+
+      if (newIndex === undefined) {
+        // 说明不存在prevChild，删掉老的 prevChild
+        hostRemove(prevChild.el);
+      } else {
+        // 存在，继续进行深度对比
+        patch(prevChild, c2[newIndex], container, parentComponent, null);
+      }
+    }
+  }
+  // ...
+}
+```
+
+**第 2 种情况 新老都有，需要修改属性**
+
+**第 3 种情况 移动节点**

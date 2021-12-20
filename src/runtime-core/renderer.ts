@@ -140,10 +140,14 @@ export function createRenderer(options) {
   }
 
   /**
-   *
-   *
-   * @param {*} c1 老数组
-   * @param {*} c2 新数组
+   * @description array diff array
+   * @author Werewolf
+   * @date 2021-12-20
+   * @param {*} c1 老
+   * @param {*} c2 新
+   * @param {*} container 容器
+   * @param {*} parentComponent 父组件
+   * @param {*} parentAnthor 在这个元素之前插入。原由:插入有位置的要求
    */
   function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
     // 初始指针 i
@@ -223,7 +227,7 @@ export function createRenderer(options) {
     } else {
       // 中间对比,经过以上逻辑已经找到了两个临界点
       /**
-       * 第五种情况-1。删除d，修改c
+       * 第五种情况-1。删除老的d，修改c
        * 旧 ab cd fg
        * 新 ab ec fg
        * 1 旧的里面存在，新的不存在（d），那么需要删除 d。
@@ -237,17 +241,31 @@ export function createRenderer(options) {
       /**
        * 优化点：当新节点的个数小于老节点点个数，也就是新的已经patch完毕，但是老节点还存在，那么老节点剩下的无需在对比，直接删除
        * 老 ab cedm fg，新 ab ec fg,当新节点的ec对比完毕，老节点还剩dm，那么直接删除，无需对比
-       * 
+       *
        * toBePatched 新节点需要patch的个数
        * patched 已经处理的个数
-       *  
-      */
-      const toBePatched = e2 -s2 +1
-      let patched = 0
-
+       *
+       */
+      const toBePatched = e2 - s2 + 1;
+      let patched = 0;
 
       // 映射关系
       const keyToNewIndexMap = new Map();
+
+      // 移动的逻辑
+      /**
+       * 旧 ab cde fg
+       * 新 ab ecd fg
+       * newIndexToOldIndexMap的长度是3， 指的是新的 ecd 的映射
+       * 我们要把 e 在老数组的的位置（4）映射到 newIndexToOldIndexMap 里面。newIndexToOldIndexMap[0] = 4
+       * 
+      */
+
+      // 初始化映射表
+      const newIndexToOldIndexMap = new Array(toBePatched)
+      for (let i = 0; i < toBePatched;i++) {
+        newIndexToOldIndexMap[i] = 0
+      }
 
       // 新的映射关系
       for (let i = s2; i <= e2; i++) {
@@ -261,7 +279,7 @@ export function createRenderer(options) {
         const prevChild = c1[i];
         if (patched >= toBePatched) {
           // 新的已经对比完，但是老的还没完事。直接删除
-          hostRemove(prevChild.el)
+          hostRemove(prevChild.el);
           // 进入下一次循环
           continue;
         }
@@ -270,7 +288,7 @@ export function createRenderer(options) {
          *  如果 newIndex 存在，说明 prevChild 在新的里面存在。
          *  如果用户写了key，用key映射查找。如果没写key,用循环查找
          */
-        if (newIndex !== null) {
+        if (prevChild.key !== null) {
           newIndex = keyToNewIndexMap.get(prevChild.key);
         } else {
           for (let j = s2; j <= e2; j++) {
@@ -283,15 +301,26 @@ export function createRenderer(options) {
 
         if (newIndex === undefined) {
           // 说明不存在prevChild，删掉老的 prevChild
-          hostRemove(prevChild.el)
+          hostRemove(prevChild.el);
         } else {
+          newIndexToOldIndexMap[newIndex - s2] = i + 1
           // 存在，继续进行深度对比
-          patch(prevChild, c2[newIndex], container, parentComponent, null)
-          patched++
+          patch(prevChild, c2[newIndex], container, parentComponent, null);
+          patched++;
+
         }
       }
     }
   }
+
+  /**
+   * 移动节点
+   * 新老都存在，只需要移动节点
+   * 找到一个固定的序列cd，减少对比插入次数
+   * 算法：最长递增子序列
+   * ab cde fg
+   * ab ecd fg
+  */
 
   /**
    * @description 删除children 节点
@@ -305,6 +334,14 @@ export function createRenderer(options) {
       hostRemove(el);
     }
   }
+  /**
+   * @description patch 属性
+   * @author Werewolf
+   * @date 2021-12-20
+   * @param {*} el
+   * @param {*} oldProps
+   * @param {*} newProps
+   */
   function patchProps(el, oldProps, newProps) {
     if (oldProps !== newProps) {
       // newProps 里面的 prop 不在 oldProps 里面，遍历新的
