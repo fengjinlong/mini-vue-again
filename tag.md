@@ -1785,6 +1785,8 @@ function patchProps(el, oldProps, newProps) {
 
 1. 第一种情况
 
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/1.png?raw=true)
+
 ```typescript
 /**
  *
@@ -1836,6 +1838,8 @@ function patchChildren(n1, n2, container, parentComponent) {
 
 3. 第三种情况
 
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/2.png?raw=true)
+
 ```typescript
 function patchChildren(n1, n2, container, parentComponent) {
   // ...
@@ -1859,9 +1863,12 @@ function patchChildren(n1, n2, container, parentComponent) {
 
 #### v0.2.3
 
-##### array diff array
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/3.png?raw=true)
+##### array diff array 双端对比算法
 
 1. 第一种情况 对比左侧相同
+
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/4.png?raw=true)
 
 - demo
 
@@ -1929,6 +1936,8 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 
 2. 第二种情况 对比右侧相同的
 
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/5.png?raw=true)
+
 - dome
 
 ```typescript
@@ -1982,6 +1991,9 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 ```
 
 3. 第三种情况 新的比老的长 创建新的
+
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/6.png?raw=true)
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/7.png?raw=true)
 
 - demo
 
@@ -2046,6 +2058,9 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 ```
 
 4. 第四种情况 老的比新的长 删除多余的老的
+
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/8.png?raw=true)
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/9.png?raw=true) 
 
 - demo
 
