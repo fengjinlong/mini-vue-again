@@ -1864,6 +1864,7 @@ function patchChildren(n1, n2, container, parentComponent) {
 #### v0.2.3
 
 ![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/3.png?raw=true)
+
 ##### array diff array 双端对比算法
 
 1. 第一种情况 对比左侧相同
@@ -2060,7 +2061,7 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 4. 第四种情况 老的比新的长 删除多余的老的
 
 ![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/8.png?raw=true)
-![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/9.png?raw=true) 
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/9.png?raw=true)
 
 - demo
 
@@ -2123,13 +2124,6 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 - demo
 
 ```typescript
-// 删除老的  (在老的里面存在，新的里面不存在)
-// 5.1
-// a,b,(c,d),f,g
-// a,b,(e,c),f,g
-// D 节点在新的里面是没有的 - 需要删除掉
-// C 节点 props 也发生了变化
-
 const prevChildren = [
   h("p", { key: "A" }, "A"),
   h("p", { key: "B" }, "B"),
@@ -2148,6 +2142,8 @@ const nextChildren = [
   h("p", { key: "G" }, "G"),
 ];
 ```
+
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/10.png?raw=true)
 
 - 实现
 
@@ -2168,6 +2164,16 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
      * 如果在ec里面遍历看是否存在d，那么时间复杂度是O(n),如果用 key 映射，那么时间复杂度是O(1)
      *
      */
+
+    /**
+     * 根据新的节点建立关于key的映射关系 keyToNewIndexMap
+     * 在老的节点里根据key查找是否存在值，也就是是否存在 keyToNewIndexMap[oldChild.key]
+     * 存在说明是相同节点，拿到索引，进行深度 patch，不存在直接在老的节点里删除
+     * 注意：老的节点可能是用户没有写key属性，那只能 for 遍历了
+     *
+     */
+
+    // s1 s2 新老节点中间不同的起始位置
     let s1 = i;
     let s2 = i;
 
@@ -2214,6 +2220,8 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 ```
 
 - 优化点
+
+![](https://github.com/fengjinlong/tuchuang/blob/master/vuediff/11.png?raw=true)
 
 ```typescript
 /**
@@ -2285,6 +2293,19 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 }
 ```
 
-**第 2 种情况 新老都有，需要修改属性**
+**第 2 种情况 新老都有，需要移动插入**
 
-**第 3 种情况 移动节点**
+```typescript
+function pathKeyedChildren() {
+  // ...
+}
+```
+
+**第 3 种情况 创建节点**
+
+```typescript
+if (newIndexToOldIndexMap[i] === 0) {
+  // 创建逻辑
+  patch(null, nextChild, container, parentComponent, anchor);
+}
+```
