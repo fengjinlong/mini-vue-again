@@ -2309,3 +2309,182 @@ if (newIndexToOldIndexMap[i] === 0) {
   patch(null, nextChild, container, parentComponent, anchor);
 }
 ```
+
+#### v0.2.4
+
+1. 组件自己的 props 更新
+
+- demo
+
+```typescript
+// 子组件 Child
+export default {
+  name: "Child",
+  setup(props, { emit }) {},
+  render(proxy) {
+    return h("div", {}, [
+      h("div", {}, "child - props - msg: " + this.$props.msg),
+    ]);
+  },
+};
+
+// 父组件
+
+export const App = {
+  name: "App",
+  setup() {
+    const msg = ref("123");
+    const changeChildProps = () => {
+      msg.value = "456";
+    };
+    return { msg, changeChildProps, changeCount };
+  },
+
+  render() {
+    return h("div", {}, [
+      h(
+        "button",
+        {
+          onClick: this.changeChildProps,
+        },
+        "change child props"
+      ),
+      h(Child, {
+        msg: this.msg,
+      }),
+    ]);
+  },
+};
+```
+
+- 实现
+
+```typescript
+// 组件更新实际是再次调用render函数,重新生成vnode，重新patch，也就是走 setupRenderEffect 逻辑
+updateComponent(n1, n2);
+function updateComponent(n1, n2) {
+  // 利用effect runner 逻辑
+  /**
+   * 怎么找instance，现在只有n 虚拟节点
+   * 那么把实例挂载到虚拟节点
+   *
+   */
+
+  const instance = (n2.component = n1.component);
+  instance.next = n2;
+
+  instance.update();
+}
+
+function setupRenderEffect(instance: any, initialVNode, container, anchor) {
+  instance.update = effect(() => {
+    if (!instance.isMounted) {
+    } else {
+      console.log("update 更新");
+
+      // next 新的虚拟节点
+      // vnode 老的虚拟节点
+      const { next, vnode } = instance;
+      // 更新props 属性
+      // 获取新的虚拟节点
+      // 根据虚拟节点更新el
+      if (next) {
+        next.el = vnode.el;
+        // 更新属性
+        updateComponentPreRender(instance, next);
+      }
+
+      const { proxy } = instance;
+      const subTree = instance.render.call(proxy);
+      const prevSubTree = instance.subTree;
+      instance.subTree = subTree;
+
+      patch(prevSubTree, subTree, container, instance, anchor);
+    }
+  });
+}
+
+function updateComponentPreRender(instance, nextVNode) {
+  // 更新实例的虚拟节点
+  instance.vnode = nextVNode;
+  instance.next = null;
+
+  // 更新props
+  instance.props = nextVNode.props;
+}
+```
+
+2. 组件的 el 更新，跟 el 同级别的组件不需要走更新逻辑
+
+- demo
+
+```typescript
+import { h, ref } from "../../lib/guide-mini-vue.esm.js";
+import Child from "./Child.js";
+
+export const App = {
+  name: "App",
+  setup() {
+    const count = ref(1);
+    const changeCount = () => {
+      count.value++;
+    };
+    return { count };
+  },
+
+  render() {
+    return h("div", {}, [
+      h(Child, {
+        msg: this.msg,
+      }),
+      h(
+        "button",
+        {
+          onClick: this.changeCount,
+        },
+        "change self count"
+      ),
+      h("p", {}, "count: " + this.count),
+    ]);
+  },
+};
+```
+
+- 实现
+
+```typescript
+// 优化点: 需要判断是否需要更新
+// 如果调用组件内的元素更新，同级别的子组件不用更新，但是触发了组件更新逻辑
+// 通过判断组件的 新老 props 是否一样 决定是否更新
+
+function updateComponent(n1, n2) {
+  // 利用effect runner 逻辑
+  /**
+   * 怎么找instance，现在只有n 虚拟节点
+   * 那么把实例挂载到虚拟节点
+   *
+   */
+
+  const instance = (n2.component = n1.component);
+  if (shouldUpdateComponent(n1, n2)) {
+    instance.next = n2;
+    instance.update();
+  } else {
+    // 不需要更新也要重置虚拟节点 和 el
+    n2.el = n1.el;
+    n2.vnode = n2;
+  }
+}
+export function shouldUpdateComponent(prevVNode, nextVNode) {
+  const { props: prevProps } = prevVNode;
+  const { props: nextProps } = nextVNode;
+
+  for (const key in nextProps) {
+    if (nextProps[key] !== prevProps[key]) {
+      return true;
+    }
+  }
+
+  return false;
+}
+```

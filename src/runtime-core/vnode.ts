@@ -9,6 +9,9 @@ export function createVNode(type, props?, children?) {
     type,
     key: props && props.key,
     props,
+    
+    // 组件实例 instance
+    component: null,
     children,
     shapeFlag: getShapeFlag(type),
     el: null,
@@ -41,7 +44,7 @@ export function createVNode(type, props?, children?) {
   return vnode;
 }
 export function createTextVNode(text: string) {
-  return createVNode(Text, {}, text)
+  return createVNode(Text, {}, text);
 }
 
 function getShapeFlag(type: any) {

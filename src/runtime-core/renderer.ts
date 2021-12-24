@@ -1,6 +1,7 @@
 import { effect } from "../reactivity/effect";
 import { ShapeFlags } from "../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
+import { shouldUpdateComponent } from "./componentUpdateUtils";
 import { createAppAPI } from "./createApp";
 import { Fragment, Text } from "./vnode";
 
@@ -41,6 +42,7 @@ export function createRenderer(options) {
           // } else if (isObject(vnode.type)) {
         } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
           // patch 组件
+          console.log("组件逻辑");
           processComponent(n1, n2, container, parentComponent, antor);
         }
     }
@@ -148,7 +150,6 @@ export function createRenderer(options) {
    */
 
   function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
-    debugger;
     // 初始指针 i
     let i = 0;
     let l2 = c2.length;
@@ -525,7 +526,38 @@ export function createRenderer(options) {
     parentComponent,
     antor
   ) {
-    mountComponent(n2, container, parentComponent, antor);
+    if (!n1) {
+      // 初始化
+      mountComponent(n2, container, parentComponent, antor);
+    } else {
+      // 更新组件 调用当前组件的render 函数，重新 vnode 重新 patch, 也就是走 setupRenderEffect 逻辑
+      updateComponent(n1, n2);
+    }
+  }
+  /**
+   * @description 组件更新
+   * @author Werewolf
+   * @date 2021-12-24
+   * @param {*} n1
+   * @param {*} n2
+   */
+  function updateComponent(n1, n2) {
+    // 利用effect runner 逻辑
+    /**
+     * 怎么找instance，现在只有n 虚拟节点
+     * 那么把实例挂载到虚拟节点
+     *
+     */
+
+    const instance = (n2.component = n1.component);
+    if (shouldUpdateComponent(n1, n2)) {
+      instance.next = n2;
+      instance.update();
+    } else {
+      // 不需要更新也要重置虚拟节点 和 el
+      n2.el = n1.el;
+      n2.vnode = n2;
+    }
   }
 
   function mountComponent(
@@ -535,7 +567,13 @@ export function createRenderer(options) {
     antor
   ) {
     // 根据虚拟节点创建组件实例
-    const instance = createComponentInstance(initialVNode, parentComponent);
+
+    // 将组件实例 挂载到虚拟接节点
+
+    const instance = (initialVNode.component = createComponentInstance(
+      initialVNode,
+      parentComponent
+    ));
 
     // 初始化，收集信息，instance挂载相关属性，方法, 装箱
     setupComponent(instance);
@@ -557,10 +595,19 @@ export function createRenderer(options) {
     setupRenderEffect(instance, initialVNode, container, antor);
   }
 
+  /**
+   * @description 调用render，也就是生成虚拟节点，进行patch。包括 初始化和更新流程
+   * @author Werewolf
+   * @date 2021-12-24
+   * @param {*} instance
+   * @param {*} initialVNode
+   * @param {*} container
+   * @param {*} anchor
+   */
   function setupRenderEffect(instance: any, initialVNode, container, anchor) {
-    effect(() => {
+    instance.update = effect(() => {
       if (!instance.isMounted) {
-        console.log("init");
+        console.log("init 初始化");
         const { proxy } = instance;
         const subTree = (instance.subTree = instance.render.call(proxy));
 
@@ -570,7 +617,18 @@ export function createRenderer(options) {
 
         instance.isMounted = true;
       } else {
-        console.log("update");
+        console.log("update 更新");
+
+        // next 新的虚拟节点
+        // vnode 老的虚拟节点
+        const { next, vnode } = instance;
+        // 更新el
+        if (next) {
+          next.el = vnode.el;
+          // 更新属性
+          updateComponentPreRender(instance, next);
+        }
+
         const { proxy } = instance;
         const subTree = instance.render.call(proxy);
         const prevSubTree = instance.subTree;
@@ -585,6 +643,30 @@ export function createRenderer(options) {
     createApp: createAppAPI(render),
   };
 }
+
+/**
+ * @description 更新属性
+ * @author Werewolf
+ * @date 2021-12-24
+ * @param {*} instance
+ * @param {*} nextVNode
+ */
+function updateComponentPreRender(instance, nextVNode) {
+  // 更新实例的虚拟节点
+  instance.vnode = nextVNode;
+  instance.next = null;
+
+  // 更新props
+  instance.props = nextVNode.props;
+}
+
+/**
+ * @description 最长递增子序列
+ * @author Werewolf
+ * @date 2021-12-24
+ * @param {*} arr
+ * @return {*}
+ */
 function getSequence(arr) {
   const p = arr.slice();
   const result = [0];

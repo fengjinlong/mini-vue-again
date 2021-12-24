@@ -9,6 +9,8 @@ export function createComponentInstance(vnode, parent) {
   // instance component
   const instance = {
     vnode,
+    // 下次要更新的虚拟节点
+    next: null,
     type: vnode.type,
     setupState: {},
     isMounted: true,
