@@ -2484,7 +2484,6 @@ export function shouldUpdateComponent(prevVNode, nextVNode) {
       return true;
     }
   }
-
   return false;
 }
 ```
