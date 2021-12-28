@@ -7,7 +7,7 @@ export const Foo = {
     // 2 this.count 访问
 
     // shallow readdonly
-    props.count++
+    // props.count++
   },
   render() {
     return h('p',{}, "foo "+ this.count)

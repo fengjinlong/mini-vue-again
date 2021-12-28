@@ -13,7 +13,7 @@ export function createComponentInstance(vnode, parent) {
     next: null,
     type: vnode.type,
     setupState: {},
-    isMounted: true,
+    isMounted: false,
     // subTree:'',
     emit: () => {},
     slots: {},
