@@ -631,6 +631,8 @@ it("should be nestes properties reactive", () => {
  * 也就是说为什么 ref 的类型需要一个 ref.value 的操作？
  * 那么 proxy 怎么知道的get 和 set ？proxy 的参数是个对象，所以需要把单值转换为对象
  * 通过 RefImpl 类实现，里面有 value get set。
+ * ref 是只有一个key（value）， 对应 唯一的dep
+ *
 */
 
 /**
@@ -657,7 +659,12 @@ class RefImpl {
   }
   set value(newValue: any) {
     // 如果value 是个reactive类型，那么需要用他的原始值作比较
-
+   /**
+     * 如果是对象的话
+     * set 逻辑里面  hasChange(newValue, this._value) 一个是object，一个是isProxy，肯定不相等，所以这需要对比原始值
+     * 原始值 _rawValue
+     *
+    */
     if (hasChanged(newValue, this._rawValue)) {
       this._rawValue = newValue;
       this._value = convert(newValue)
