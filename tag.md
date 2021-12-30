@@ -2494,3 +2494,69 @@ export function shouldUpdateComponent(prevVNode, nextVNode) {
   return false;
 }
 ```
+
+#### v0.2.5
+
+##### nextTick
+
+1. 背景
+
+```typescript
+const count = ref(1);
+for (let i = 0; i < 100; i++) {
+  count.value = i;
+}
+/**
+ * 代码是同步执行的，响应式数据count 需要更新100次。
+ * 数据更新一次，视图渲染一次。
+ * 很显然不合理
+ * 视图更新不同同步执行，必须一步执行。也就是数据更新完以后，试图在更新，才合理
+ *
+ */
+```
+
+2. 实现
+
+```typescript
+// effect 的第二个参数
+{
+  scheduler () {
+    console.log("effect 的 scheduler 逻辑，数据更新，视图不更新")
+    queueJobs(instance.update)
+  }
+}
+
+const queue: any[] = [];
+
+let isFlushPending = false;
+
+export function nextTick(fn) {
+  return fn ? Promise.resolve().then(fn) : Promise.resolve();
+}
+export function queueJobs(job) {
+  if (!queue.includes(job)) {
+    queue.push(job);
+  }
+  queueFlush();
+}
+function queueFlush() {
+  if (isFlushPending) {
+    return;
+  }
+  isFlushPending = true;
+  nextTick(flushJobs);
+}
+function flushJobs() {
+  Promise.resolve().then(() => {
+    isFlushPending = false;
+    let job;
+
+    while ((job = queue.shift())) {
+      job && job();
+    }
+  });
+}
+
+
+
+```
