@@ -1030,15 +1030,22 @@ export default {
 - 初始化时候创建代理对象 proxy
 
   ```typescript
+  // $el思路就是   在虚拟节点上存储创建的el,当用户需要时好，返回即可
+  // 在虚拟节点喝组件实例 其实是一回事，二者可以相互找来找去
+
   // $el
   function mountElement(vnode: any, container: any) {
+    *这里是的vnode实际上是subTree，如果不挂el
+    的话，那么patch完毕拿不到el*
     const el = (vnode.el) = document.createElement(vnode.type);
     // ...
   function setupRenderEffect(instance: any,vnode: any,container) {
     const { proxy } = instance;
     const subTree = instance.render.call(proxy);
     // vnode -> element -> mountElement
+
     patch(subTree, container);
+    *patch 结束后，所有组件渲染完毕，此时 subtree 是最终虚拟节点*
     vnode.el = subTree.el
   }
   ```
@@ -1057,6 +1064,7 @@ export default {
         }
         // key -> $el
         if (key === "$el") {
+          *我这里是组价的虚拟节点*
           return instance.vnode.el
         }
       }
