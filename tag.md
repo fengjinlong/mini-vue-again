@@ -2568,3 +2568,10 @@ function flushJobs() {
 
 
 ```
+
+### 补充
+
+1. 凡是跟 this 相关的都是放在组件的 instance 上处理
+2. 凡是拿 setup 参数的相关的，都是在 setupStatefulComponent 函数里面处理，而且基本都是挂在 instance 上的，为了是通过 instance 传递
+
+- emit: 先挂在 isntance 上，然后给实现这个函数，这函数拿到 props，对比 emit 的参数，找到了执行。都是通过 instance 相互查找的
