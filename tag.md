@@ -2575,3 +2575,169 @@ function flushJobs() {
 2. 凡是拿 setup 参数的相关的，都是在 setupStatefulComponent 函数里面处理，而且基本都是挂在 instance 上的，为了是通过 instance 传递
 
 - emit: 先挂在 isntance 上，然后给实现这个函数，这函数拿到 props，对比 emit 的参数，找到了执行。都是通过 instance 相互查找的
+- slots: 将 children 挂载 instance 上, 通过$slots: (i) => i.slots, this.$slots 获取 children
+
+3. 在分析 slots
+
+- 虚拟节点的 children 赋值给 slots
+- 第一种情况 一个 p 标签
+
+```typescript
+// 实际使用
+// <Foo>
+//   <p>123</p>
+// </Foo>
+// App.js
+const foo = h(Foo,{},h("p", {}, "123"))Î
+
+// 实现
+// Foo.js
+return h("div", {}, [foo, this.$slots])
+    // console.log(this.$slots);
+    // {
+    //   children: "123"
+    //   el: null
+    //   props: {}
+    //   shapeFlag: 5
+    //   type: "p"
+    // }
+```
+
+- 第二种情况 2 个标签 也就是数组
+
+```typescript
+// 使用
+//  <Foo><p>123</p><p>456</p></Foo>
+const foo = h(Foo, {}, [h("p", {}, "123"), h("p", {}, "456")]);
+/**
+ * children 的类型可以为 string, array
+ * string -> h("div", {}, "xxx")
+ * array  -> h("div", {}, [h("div", {}, "xxx1"), h("div", {}, "xxx2")])
+ */
+
+/**
+ * vnode 的类型可以为 string，组件
+ * string -> typeof(type) 为 string
+ * 组件    -> typeof(type) 为 object
+ * 注意这里的vnode没有数组类型
+ */
+
+// 所以数组需要vnode 包裹一下
+// 实现
+return h("div", {}, [foo, h("div", {}, this.$slots)]);
+// console.log(this.$slots);
+// [
+// {
+//   children: "123"
+//   el: null
+//   props: {}
+//   shapeFlag: 5
+//   type: "p"
+// },
+// {
+//   children: "456"
+//   el: null
+//   props: {}
+//   shapeFlag: 5
+//   type: "p"
+// }
+// ]
+```
+
+- 兼容数组与非数组
+
+```typescript
+export function initSlots(instance, children) {
+  instance.slots = Array.isArray(children) ? children : [children];
+}
+```
+
+- 第三种情况
+
+```typescript
+// 对象,具名插槽
+// App.js
+const app = h(
+  Foo,
+  {},
+  {
+    header: h("p", {}, "header"),
+    footer: h("p", {}, "footer"),
+  }
+);
+
+// 实现
+// Foo.js;
+return h("div", {}, [
+  renderSlots(this.$slots, "header"),
+  foo,
+  renderSlots(this.$slots, "footer"),
+]);
+// this.$slots
+// {
+//    header: h("p", {}, "header"),
+//    footer: h("p", {}, "footer"),
+// }
+export function renderSlots(slots, name) {
+  const slot = slots[name];
+  if (slot) {
+    return createVNode("div", {}, slot);
+  }
+}
+// 挂载
+export function initSlots(instance, children) {
+  const slots = {};
+  for (const key in children) {
+    const value = children[key];
+    slots[key] = Array.isArray(value) ? children : [value];
+  }
+  instance.slots = slots;
+}
+```
+
+- 第四种情况 作用域插槽 子向父传参数
+
+```typescript
+// 使用
+// Foo.js
+return h("div", {}, [
+  renderSlots(this.$slots, "header", { age: 18 }),
+  foo,
+  renderSlots(this.$slots, "footer"),
+]);
+
+// App.js
+const foo = h(
+  Foo,
+  {},
+  {
+    header: ({ age }) => [h("p", {}, "header" + age)],
+    footer: () => h("p", {}, "footer"),
+  }
+);
+
+// 实现
+
+export function renderSlots(slots, name, props) {
+  const slot = slots[name];
+  if (slot) {
+    if (typeof slot === "function") {
+      return createVNode("div", {}, slot(props));
+    }
+  }
+}
+
+export function initSlots(instance, children) {
+  normalizeObjectSlots(children, instance.slots);
+}
+
+function normalizeObjectSlots(children, slots) {
+  for (const key in children) {
+    const value = children[key];
+    slots[key] = (props) => normalizeSlotValue(value(props));
+  }
+}
+function normalizeSlotValue(value) {
+  return Array.isArray(value) ? value : [value];
+}
+```
