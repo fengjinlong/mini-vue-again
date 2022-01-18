@@ -2060,11 +2060,11 @@ function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
   if (i > e1) {
     if (i <= e2) {
       const nextPos = i + 1;
-      const antor = i + 1 > l2 ? null : c2[nextPos].el;
+      const anchor = i + 1 > l2 ? null : c2[nextPos].el;
       while (i <= e2) {
         // 左 antor为 null，所以在最后插入 c2[i]
         // 右 antor为 c2[1].el，所以在最后插入 c2[1].el 之前插入 c2[i]
-        patch(null, c2[i], container, parentComponent, antor);
+        patch(null, c2[i], container, parentComponent, anchor);
         i++;
       }
     }
