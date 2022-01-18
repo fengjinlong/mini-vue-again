@@ -134,7 +134,7 @@ export function createRenderer(options) {
         mountChildren(c2, container, parentComponent, antor);
       } else {
         // array diff array
-        pathKeyedChildren(c1, c2, container, parentComponent, antor);
+        patchKeyedChildren(c1, c2, container, parentComponent, antor);
       }
     }
   }
@@ -150,7 +150,7 @@ export function createRenderer(options) {
    * @param {*} parentAnthor 在这个元素之前插入。原由:插入有位置的要求
    */
 
-  function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
     // 初始指针 i
     let i = 0;
     let l2 = c2.length;

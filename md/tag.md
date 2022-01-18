@@ -1917,7 +1917,7 @@ function isSameNodeType(n1, n2) {
 - 实现
 
 ```typescript
-function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
   // 初始指针 i
   let i = 0;
   let l2 = c2.length;
@@ -1975,7 +1975,7 @@ const nextChildren = [
 - 实现
 
 ```typescript
-function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
   // ...
 
   /**
@@ -2042,7 +2042,7 @@ const nextChildren = [
 - 实现
 
 ```typescript
-function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
   // ...
   // 新
   let l2 = c2.length;
@@ -2109,7 +2109,7 @@ const nextChildren = [h("p", { key: "B" }, "B"), h("p", { key: "C" }, "C")];
 - 实现
 
 ```typescript
-function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
   // ...
 
   if (i > e1) {
@@ -2163,7 +2163,7 @@ const nextChildren = [
 - 实现
 
 ```typescript
-function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
   // ...
 
   if (i > e1) {
@@ -2247,7 +2247,7 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
  * patched 已经处理的个数
  *
  */
-function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
   // ...
 
   if (i > e1) {
@@ -2311,7 +2311,7 @@ function pathKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
 **第 2 种情况 新老都有，需要移动插入**
 
 ```typescript
-function pathKeyedChildren() {
+function patchKeyedChildren() {
   // ...
 }
 ```
