@@ -65,7 +65,13 @@ export function createRenderer(options) {
     mountChildren(n2.children, container, parentComponent, anchor);
   }
 
-  function processElement(n1, n2: any, container: any, parentComponent, anchor) {
+  function processElement(
+    n1,
+    n2: any,
+    container: any,
+    parentComponent,
+    anchor
+  ) {
     // 包含初始化和更新流程
     // init
     if (!n1) {
@@ -150,7 +156,13 @@ export function createRenderer(options) {
    * @param {*} parentAnthor 在这个元素之前插入。原由:插入有位置的要求
    */
 
-  function patchKeyedChildren(c1, c2, container, parentComponent, parentAnthor) {
+  function patchKeyedChildren(
+    c1,
+    c2,
+    container,
+    parentComponent,
+    parentAnthor
+  ) {
     // 初始指针 i
     let i = 0;
     let l2 = c2.length;
@@ -606,43 +618,46 @@ export function createRenderer(options) {
    * @param {*} anchor
    */
   function setupRenderEffect(instance: any, initialVNode, container, anchor) {
-    instance.update = effect(() => {
-      if (!instance.isMounted) {
-        console.log("init 初始化");
-        const { proxy } = instance;
-        const subTree = (instance.subTree = instance.render.call(proxy));
+    instance.update = effect(
+      () => {
+        if (!instance.isMounted) {
+          console.log("init 初始化");
+          const { proxy } = instance;
+          const subTree = (instance.subTree = instance.render.call(proxy));
 
-        patch(null, subTree, container, instance, anchor);
+          patch(null, subTree, container, instance, anchor);
 
-        initialVNode.el = subTree.el;
+          initialVNode.el = subTree.el;
 
-        instance.isMounted = true;
-      } else {
-        console.log("update 更新");
+          instance.isMounted = true;
+        } else {
+          console.log("update 更新");
 
-        // next 新的虚拟节点
-        // vnode 老的虚拟节点
-        const { next, vnode } = instance;
-        // 更新el
-        if (next) {
-          next.el = vnode.el;
-          // 更新属性
-          updateComponentPreRender(instance, next);
+          // next 新的虚拟节点
+          // vnode 老的虚拟节点
+          const { next, vnode } = instance;
+          // 更新el
+          if (next) {
+            next.el = vnode.el;
+            // 更新属性
+            updateComponentPreRender(instance, next);
+          }
+
+          const { proxy } = instance;
+          const subTree = instance.render.call(proxy);
+          const prevSubTree = instance.subTree;
+          instance.subTree = subTree;
+
+          patch(prevSubTree, subTree, container, instance, anchor);
         }
-
-        const { proxy } = instance;
-        const subTree = instance.render.call(proxy);
-        const prevSubTree = instance.subTree;
-        instance.subTree = subTree;
-
-        patch(prevSubTree, subTree, container, instance, anchor);
+      },
+      {
+        scheduler() {
+          console.log("effect 的 scheduler 逻辑，数据更新，视图不更新");
+          queueJobs(instance.update);
+        },
       }
-    }, {
-      scheduler () {
-        console.log("effect 的 scheduler 逻辑，数据更新，视图不更新")
-        queueJobs(instance.update)
-      }
-    });
+    );
   }
 
   return {
