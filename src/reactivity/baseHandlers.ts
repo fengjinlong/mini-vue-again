@@ -7,6 +7,7 @@ const set = createSetter();
 const readonlyGet = createGetter(true);
 const shallowReadonlyGet = createGetter(true, true);
 
+// shallow 浅层次
 function createGetter(isReadOnly = false, shallow = false) {
   return function get(target, key) {
     if (key === ReactiveFlegs.IS_REACTIVE) {
