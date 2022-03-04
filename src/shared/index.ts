@@ -7,9 +7,9 @@ export const hasChanged = (v1, v2) => {
 };
 export const camelize = (str: string) => {
   return str.replace(/-(\w)/g, (_, c: string) => {
-    return c ? c.toUpperCase() : ''
-  })
-}
+    return c ? c.toUpperCase() : "";
+  });
+};
 export const hasOwn = (val, key) =>
   Object.prototype.hasOwnProperty.call(val, key);
 const capitalize = (str: string) => {
