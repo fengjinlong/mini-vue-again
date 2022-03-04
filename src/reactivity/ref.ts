@@ -22,9 +22,8 @@ class RefImpl {
 
     if (hasChanged(newValue, this._rawValue)) {
       this._rawValue = newValue;
-      this._value = convert(newValue)
-      // 必须是先修改在调用trigger
-      convert(newValue)
+      this._value = convert(newValue);
+      this._rawValue = newValue;
       triggerEffect(this.dep);
     }
   }
