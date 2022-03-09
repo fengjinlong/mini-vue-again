@@ -3,8 +3,7 @@ function createElement(type: string) {
   // console.log("dom ------api")
   return document.createElement(type);
 }
-function patchProp(el, key, prevVal,nextVal) {
-  
+function patchProp(el, key, prevVal, nextVal) {
   const isOn = (key: string) => /^on[A-Z]/.test(key);
   if (isOn(key)) {
     const event = key.slice(2).toLowerCase();
@@ -30,7 +29,7 @@ function insert(child, parent, anchor) {
 
   // 插入到最后
   // parent.append(child) 等价于 parent.insertBefore(child, parent, null)
-// console.log()
+  // console.log()
   parent.insertBefore(child, anchor || null);
 }
 /**
@@ -42,7 +41,7 @@ function insert(child, parent, anchor) {
 function remove(child) {
   const parent = child.parentNode;
   if (parent) {
-    parent.removeChild(child)
+    parent.removeChild(child);
   }
 }
 
@@ -54,10 +53,10 @@ function remove(child) {
  * @param {*} text 子节点
  */
 function setElementText(el, text) {
-  el.textContent = text
+  el.textContent = text;
 }
 
-const renderer: any= createRenderer({
+const renderer: any = createRenderer({
   createElement,
   patchProp,
   setElementText,
@@ -89,5 +88,5 @@ export function createApp(...args) {
   // }
 }
 
-export * from "../runtime-core"
-export * from "../reactivity"
+export * from "../runtime-core";
+export * from "../reactivity";
