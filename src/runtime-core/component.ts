@@ -19,7 +19,7 @@ export function createComponentInstance(vnode, parent) {
     slots: {},
     provides: parent ? parent.provides : {},
     parent,
-    props: {}
+    props: {},
   };
   instance.emit = emit.bind(null, instance) as any;
   return instance;
@@ -38,16 +38,16 @@ export function setupComponent(instance) {
 function setupStatefulComponent(instance: any) {
   // 调用setup 函数，拿到setup函数的返回值
 
-  const Component = instance.vnode.type;  
-  instance.proxy = new Proxy({_: instance}, PublicInstanceProxyHandlers)
+  const Component = instance.vnode.type;
+  instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
 
   const { setup } = Component;
   if (setup) {
-    setCurrentInstance(instance)
+    setCurrentInstance(instance);
     const setupResult = setup(shallowReadonly(instance.props), {
-      emit: instance.emit
+      emit: instance.emit,
     });
-    setCurrentInstance(null)
+    setCurrentInstance(null);
 
     handleSetupResult(instance, setupResult);
   }
@@ -56,9 +56,9 @@ function handleSetupResult(instance: any, setupResult: any) {
   // 返回值是function，那就是render函数
   // 返回值是Object，那需要把这个对象挂到组件上下文
   if (typeof setupResult === "object") {
-    instance.setupState = proxyRefs(setupResult)
+    instance.setupState = proxyRefs(setupResult);
   }
-  
+
   // 保证组件render有值
   // 组件 -> const App = {
   //   render() {
@@ -70,24 +70,24 @@ function handleSetupResult(instance: any, setupResult: any) {
   //     }
   //   }
   // }
-  finishComponentSetup(instance)
+  finishComponentSetup(instance);
 }
 function finishComponentSetup(instance: any) {
-  const Component = instance.type
-    instance.render = Component.render
-    // instance -> {
-    //   render:
-    //   setupState
-    //   vnode: {
-    //     type: App
-    //   }
-    // }
+  const Component = instance.type;
+  instance.render = Component.render;
+  // instance -> {
+  //   render:
+  //   setupState
+  //   vnode: {
+  //     type: App
+  //   }
+  // }
 }
 
-let currentInstance = null
-export function  getCurrentInstance () {
-  return currentInstance
+let currentInstance = null;
+export function getCurrentInstance() {
+  return currentInstance;
 }
-export function setCurrentInstance (instance) {
-  currentInstance = instance
+export function setCurrentInstance(instance) {
+  currentInstance = instance;
 }
