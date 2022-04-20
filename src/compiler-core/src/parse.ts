@@ -129,6 +129,7 @@ function startsWithEndTagOpen(source: any, tag: any) {
   return source.startsWith("</") && source.slice(2, 2 + tag.length) === tag;
 }
 
+
 function parseTag(context: any, type: TagType) {
   const match: any = /^<\/?([a-z]*)/i.exec(context.source);
   const tag = match[1];
