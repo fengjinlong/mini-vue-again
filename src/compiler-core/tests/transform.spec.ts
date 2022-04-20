@@ -8,12 +8,11 @@ describe("transform", () => {
     const plugin = (node) => {
       if (node.type === NodeTypes.TEXT) {
         node.content = "hi, mini-vue";
-        
       }
     };
 
     transform(ast, {
-      nodeTransformer: [plugin]
+      nodeTransforms: [plugin],
     });
     const nodeText = ast.children[0].children[0];
     expect(nodeText.content).toBe("hi, mini-vue");

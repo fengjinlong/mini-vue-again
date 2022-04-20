@@ -1,8 +1,10 @@
+import { NodeTypes } from "./ast";
+import { helperMapName, TO_DISPLAY_STRING } from "./runtimeHelpers";
+
 export function generate(ast) {
   const context = createCodegenContext();
   const { push } = context;
 
-  console.log(ast);
   // 导入逻辑 const { toDisplayString: _toDisplayString } = Vue
   genFunctionPreamble(ast, context);
 
@@ -20,10 +22,8 @@ export function generate(ast) {
 function genFunctionPreamble(ast, context) {
   const { push } = context;
   const VueBinging = "Vue";
-  console.log("ast---");
-  console.log(ast.helpers.length);
   if (ast.helpers.length) {
-    const aliasHelper = (s) => `${s}: _${s}`;
+    const aliasHelper = (s) => `${helperMapName[s]}: _${helperMapName[s]}`;
     push(
       `const { ${ast.helpers.map(aliasHelper).join(", ")} } = ${VueBinging}`
     );
@@ -33,6 +33,23 @@ function genFunctionPreamble(ast, context) {
 }
 
 function genNode(node: any, context) {
+  switch (node.type) {
+    case NodeTypes.TEXT:
+      // 处理文本 把内容返回
+      genText(node, context);
+      break;
+    case NodeTypes.INTERPOLATION:
+      // 处理插值 _toDisplayString
+      // node - { type: 0, content: { type: 1, content: 'message' } }
+      genInterpolation(node, context);
+      break;
+    case NodeTypes.SIMPLE_EXPRESSION:
+      genExpression(node, context);
+      break;
+  }
+}
+
+function genText(node, context: any) {
   const { push } = context;
   push(`'${node.content}'`);
 }
@@ -43,6 +60,21 @@ function createCodegenContext() {
     push(source) {
       context.code += source;
     },
+    helper(key) {
+      return `_${helperMapName[key]}`;
+    },
   };
   return context;
+}
+function genInterpolation(node: any, context: any) {
+  const { push, helper } = context;
+  // push(`_toDisplayString(_ctx.message)`)
+  push(`${helper(TO_DISPLAY_STRING)}(`);
+  genNode(node.content, context);
+  push(`)`);
+}
+
+function genExpression(node: any, context: any) {
+  const { push } = context;
+  push(`${node.content}`);
 }

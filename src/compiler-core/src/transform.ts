@@ -1,4 +1,5 @@
 import { NodeTypes } from "./ast";
+import { TO_DISPLAY_STRING } from "./runtimeHelpers";
 
 export function transform(root, options = {}) {
   // 全局上下文
@@ -22,27 +23,28 @@ function traverseNode(node: any, context) {
   switch (node.type) {
     case NodeTypes.INTERPOLATION:
       // 如果是插值 需要 toDisplayString
-      context.helper("toDisplayString");
+      context.helper(TO_DISPLAY_STRING);
+      break;
+    case NodeTypes.ROOT:
+    case NodeTypes.ELEMENT:
+      traverseChildren(node, context);
       break;
     default:
       break;
   }
-  traverseChildren(node, context);
 }
 function traverseChildren(node: any, context: any) {
   const children = node.children;
-  if (children) {
-    for (let i = 0; i < children.length; i++) {
-      const node = children[i];
-      traverseNode(node, context);
-    }
+  for (let i = 0; i < children.length; i++) {
+    const node = children[i];
+    traverseNode(node, context);
   }
 }
 
 function createTransformContext(root: any, options: any) {
   const context = {
     root,
-    nodeTransformer: options.nodeTransformer || {},
+    nodeTransformer: options.nodeTransforms || [],
     helpers: new Map(),
     helper(key) {
       context.helpers.set(key, 1);

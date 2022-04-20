@@ -103,6 +103,7 @@ function advanceBy(context: any, length: number) {
 function createRoot(children) {
   return {
     children,
+    type: NodeTypes.ROOT,
   };
 }
 function createParserContext(context: any) {
@@ -128,7 +129,6 @@ function parseElement(context: any, ancestors) {
 function startsWithEndTagOpen(source: any, tag: any) {
   return source.startsWith("</") && source.slice(2, 2 + tag.length) === tag;
 }
-
 
 function parseTag(context: any, type: TagType) {
   const match: any = /^<\/?([a-z]*)/i.exec(context.source);
