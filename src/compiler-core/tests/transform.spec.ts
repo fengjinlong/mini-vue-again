@@ -8,9 +8,10 @@ describe("transform", () => {
     const plugin = (node) => {
       if (node.type === NodeTypes.TEXT) {
         node.content = "hi, mini-vue";
+        
       }
     };
-    
+
     transform(ast, {
       nodeTransformer: [plugin]
     });
