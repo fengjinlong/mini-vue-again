@@ -26,3 +26,4 @@ function fun(arr) {
 const arr = [3, 2, 5, 1, 2, 3];
 fun(arr);
 // 最长递增子序列
+
