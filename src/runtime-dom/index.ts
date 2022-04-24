@@ -89,4 +89,3 @@ export function createApp(...args) {
 }
 
 export * from "../runtime-core";
-export * from "../reactivity";
