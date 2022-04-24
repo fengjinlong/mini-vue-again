@@ -1,7 +1,7 @@
 import { ShapeFlags } from "../shared/ShapeFlags";
 export const Fragment = Symbol("Fragment");
 export const Text = Symbol("Text");
-
+export { createVNode as createElementVNode };
 export function createVNode(type, props?, children?) {
   // console.log(props)
   // 相同的节点 type key 相同
@@ -9,7 +9,7 @@ export function createVNode(type, props?, children?) {
     type,
     key: props && props.key,
     props,
-    
+
     // 组件实例 instance
     component: null,
     children,
