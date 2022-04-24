@@ -10,6 +10,7 @@ export const camelize = (str: string) => {
     return c ? c.toUpperCase() : "";
   });
 };
+export const isString = (value) => typeof value === "string";
 export const hasOwn = (val, key) =>
   Object.prototype.hasOwnProperty.call(val, key);
 const capitalize = (str: string) => {
